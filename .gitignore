@@ -1,2 +1,6 @@
 *.RData
 *.RHistory
+.Rproj.user
+
+main_cache/
+main.html
