@@ -125,7 +125,7 @@ run_simulation <- function(pv_array_size = 8, demand_profile_index = 1) {
     demand_profile,
     generation_total,
     energy_imported,
-    battery_percentage = battery_energy / battery_spec$capacity)
+    battery_percentage = 100 * battery_energy / battery_spec$capacity)
   return(xts(df, date))
 }
 
@@ -137,8 +137,12 @@ server <- function(input, output) {
   })
   
   myxts_selected <- reactive({
-    date_range_selected <- sort(input[["date_range_selected"]])
-    myxts()[paste(date_range_selected[1], date_range_selected[2], sep = "/")]
+    date_range_selected <- input[["date_range_selected"]]
+    # If second date is smaller than the first one then make
+    # them equal. That way data from a single day will be used.
+    date_range_selected[2] <- max(date_range_selected)
+    index <- paste(date_range_selected[1], date_range_selected[2], sep = "/")
+    return(myxts()[index])
   })
   
   output[["demand_profile_plot"]] <- renderDygraph({
@@ -150,7 +154,7 @@ server <- function(input, output) {
   output[["battery_percentage"]] <- renderDygraph({
     dygraph(myxts_selected()[, "battery_percentage"], main = "Battery charge (%)", group = "may") %>% 
       dyRangeSelector() %>%
-      dyAxis("y", valueRange = c(0, 1.001)) %>%
+      dyAxis("y", valueRange = c(0, 100.1)) %>%
       dyOptions(fillGraph = TRUE, fillAlpha = 0.1)
   })
   output[["energy_imported"]] <- renderDygraph({
@@ -196,10 +200,4 @@ ui <- fluidPage(
   )
 )
 
-app <- shinyApp(ui = ui, server = server)
-
-runApp(app)
-#shinyAppDir("App")
-#runApp(app, launch.browser = FALSE)
-
-
+shinyApp(ui = ui, server = server)
