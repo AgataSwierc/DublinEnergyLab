@@ -21,6 +21,19 @@ library(xts)
 library(dplyr)
 library(dygraphs)
 library(shiny)
+library(XML)
+
+# Donload the data about PV inverters from California Energy Commission website GoSolar
+tables <- readHTMLTable("http://www.gosolarcalifornia.ca.gov/equipment/inverters.php")
+pv_inverters <- tables[[1]]
+names(pv_inverters) <- c("manufacturer", "model", "description", "power_rating", "efficiency", "approved_builtin_meter", "notes")
+pv_inverters$power_rating <- as.numeric(as.character(pv_inverters$power_rating))
+pv_inverters$efficiency <- as.numeric(as.character(pv_inverters$efficiency)) / 100
+write.csv2(pv_inverters, file = "pv_inverters.csv", row.names = FALSE)
+
+pv_inverters <- read.csv2("pv_inverters.csv")
+pv_inverter_spec <- as.list(pv_inverters[pv_inverters$model == "SE3000 (208V) w/ -ER-US or A-US", ])
+
 
 #' Define parameters of the powerwall battery.
 powerwall_spec = list(
