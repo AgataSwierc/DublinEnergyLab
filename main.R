@@ -69,6 +69,7 @@ run_simulation <- function(pv_array_size = 8, demand_profile_index = 1) {
   generation_total <- generation_normalized * pv_array$capacity
   battery_energy <- rep(0, n)
   energy_imported <- rep(0, n)
+  battery_loss <- rep(0, n)
   
 
   for (i in 1:(n - 1)) {
@@ -80,6 +81,8 @@ run_simulation <- function(pv_array_size = 8, demand_profile_index = 1) {
         # Batter is not empty. We can use this energy.
         
         battery_diff <- min(energy_diff, battery_energy[i], battery_spec$power_nominal * interval)
+        
+        battery_diff_effective <- battery_diff
         
         # Take energy from battery
         battery_energy[i + 1] <- battery_energy[i] - battery_diff
@@ -101,12 +104,15 @@ run_simulation <- function(pv_array_size = 8, demand_profile_index = 1) {
       if (battery_energy[i] < battery_spec$capacity) {
         # Battery is not full. We can save some energy in the battery.
         
-        battery_diff <- max((battery_energy[i] - battery_spec$capacity), energy_diff)
+        battery_diff <- max((battery_energy[i] - battery_spec$capacity) / battery_spec$efficiency, energy_diff)
+        bettery_diff_effective <- battery_diff * battery_spec$efficiency
+        
+        battery_loss[i] <- bettery_diff_effective - battery_diff
         
         # Save energy in the battery
-        battery_energy[i + 1] <- battery_energy[i] - battery_diff
+        battery_energy[i + 1] <- battery_energy[i] - bettery_diff_effective
         
-        # Decrease energy_diff by the amount taken from the battery
+        # Decrease energy_diff by the amount saved in the battery
         energy_diff <- energy_diff - battery_diff
         
         # Leak extra energy to the grid
@@ -125,6 +131,7 @@ run_simulation <- function(pv_array_size = 8, demand_profile_index = 1) {
     demand_profile,
     generation_total,
     energy_imported,
+    battery_loss,
     battery_percentage = battery_energy / battery_spec$capacity)
   return(xts(df, date))
 }
