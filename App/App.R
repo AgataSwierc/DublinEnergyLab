@@ -17,7 +17,7 @@ source("Common.R")
 #save(demand_profiles, generation_normalized, file = "AppData.RData")
 load("AppData.RData")
 
-server <- function(input, output) {
+server <- function(input, output, clientData, session) {
   myxts <- reactive({
     pv_array_size <- input[["pv_array_size"]]
     demand_profile_index <- input[["demand_profile_index"]]
@@ -56,6 +56,14 @@ server <- function(input, output) {
       dyOptions(fillGraph = TRUE, fillAlpha = 0.1) %>%
       dyLegend(show = "always")
   })
+  
+  observe({
+    pv_array_size <- input[["pv_array_size"]]
+    npv <- calculate_npv(pv_array_size)
+    
+    updateTextInput(session, "npv_value_output",
+      value = as.character(npv))
+  })
 }
 
 
@@ -66,6 +74,7 @@ date_selected_end <- "2009-05-31"
 ui <- fluidPage(
   sidebarLayout(
     sidebarPanel(width = 3,
+      h3("Input"),
       numericInput("demand_profile_index",
         label = "Household index:",
         min = 1,
@@ -76,12 +85,12 @@ ui <- fluidPage(
         min = 1,
         max = 25,
         value = 8),
-      sliderInput("battery_array_size",
-        label = "Number of batteries:",
-        step = 1,
-        min = 1,
-        max = 2,
-        value = 1),
+#       sliderInput("battery_array_size",
+#         label = "Number of batteries:",
+#         step = 1,
+#         min = 1,
+#         max = 2,
+#         value = 1),
       sliderInput("inverter_efficiency",
         label = "Inverter efficiency:",
         step = 0.005,
@@ -93,7 +102,9 @@ ui <- fluidPage(
         start = date_selected_start,
         end = date_selected_end,
         min = min(date),
-        max = max(date))
+        max = max(date)),
+      h3("Output"),
+      textInput("npv_value_output", "NPV:")
     ),
     mainPanel(width = 9,
       dygraphOutput("demand_profile_plot",
