@@ -207,11 +207,20 @@ create_npv_table <- function(simulation_result, pv_array_size) {
   
   npv_table$net_cashflow <- npv_table$inflow - npv_table$outflow - npv_table$cashflow_investment
   
+  npv_table$spp <- cumsum(npv_table$inflow) - 
+    cumsum(npv_table$cashflow_investment) - 
+    cumsum(npv_table$outflow_inverter)
+  
   return(npv_table)
 }
 
 calculate_npv <- function(simulation_result, pv_array_size) {
   npv_table <- create_npv_table(simulation_result, pv_array_size)
+  
   npv <- ceiling(sum(npv_table$net_cashflow / (1 + discount_rate) ^ npv_table$year_index))
-  return(npv)
+  
+  positive_year <- npv_table$year_index[npv_table$spp > 0]
+  spp <- if (length(positive_year) > 0) min(positive_year) else NA
+  
+  return(list(npv = npv, spp = spp))
 }

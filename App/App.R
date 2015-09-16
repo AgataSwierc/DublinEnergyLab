@@ -59,10 +59,12 @@ server <- function(input, output, clientData, session) {
   
   observe({
     pv_array_size <- input[["pv_array_size"]]
-    npv <- calculate_npv(myxts(), pv_array_size)
+    result <- calculate_npv(myxts(), pv_array_size)
     
     updateTextInput(session, "npv_value_output",
-      value = as.character(npv))
+      value = as.character(result$npv))
+    updateTextInput(session, "spp_value_output",
+      value = ifelse(is.na(result$spp), "exceeds lifetime", as.character(result$spp)))
   })
 }
 
@@ -83,7 +85,7 @@ ui <- fluidPage(
       sliderInput("pv_array_size",
         label = "Number of solar modules:",
         min = 1,
-        max = 25,
+        max = 30,
         value = 8),
 #       sliderInput("battery_array_size",
 #         label = "Number of batteries:",
@@ -104,7 +106,8 @@ ui <- fluidPage(
         min = min(date),
         max = max(date)),
       h3("Output"),
-      textInput("npv_value_output", "NPV:")
+      textInput("npv_value_output", "NPV:"),
+      textInput("spp_value_output", "SPP:")
     ),
     mainPanel(width = 9,
       dygraphOutput("demand_profile_plot",
