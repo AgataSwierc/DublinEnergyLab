@@ -16,7 +16,8 @@ powerwall_spec = list(
   voltage_nominal = 350, # Volts
   voltage_range = c(350, 450), # Volts
   current_nominal = 5.8, # Amp
-  current_peak = 8.6 # Amp
+  current_peak = 8.6, # Amp
+  cost = 2654 # EUR
 )
 
 battery_spec <- powerwall_spec
@@ -32,8 +33,7 @@ run_simulation <- function(pv_array_size = 8, demand_profile_index = 1, inverter
   )
   
   pv_module <- list(
-    capacity = 0.215, # kWp
-    cost = 5700 # euro
+    capacity = 0.215 # kWp
   )
   
   pv_array <- list(
