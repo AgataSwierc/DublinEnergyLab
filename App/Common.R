@@ -127,8 +127,8 @@ run_simulation <- function(pv_array_size = 8, demand_profile_index = 1, inverter
   return(xts(df, date))
 }
 
-create_npv_table <- function(pv_array_size = 8) {
-  year_result <- run_simulation(pv_array_size)
+create_npv_table <- function(simulation_result, pv_array_size) {
+  year_result <- simulation_result
   
   energy_prices_residential <- data.frame(
     band = c("DA", "DB", "DC", "DD", "DE"),
@@ -210,8 +210,8 @@ create_npv_table <- function(pv_array_size = 8) {
   return(npv_table)
 }
 
-calculate_npv <- function(pv_array_size = 8) {
-  npv_table <- create_npv_table(pv_array_size)
+calculate_npv <- function(simulation_result, pv_array_size) {
+  npv_table <- create_npv_table(simulation_result, pv_array_size)
   npv <- ceiling(sum(npv_table$net_cashflow / (1 + discount_rate) ^ npv_table$year_index))
   return(npv)
 }

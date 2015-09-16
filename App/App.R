@@ -59,7 +59,7 @@ server <- function(input, output, clientData, session) {
   
   observe({
     pv_array_size <- input[["pv_array_size"]]
-    npv <- calculate_npv(pv_array_size)
+    npv <- calculate_npv(myxts(), pv_array_size)
     
     updateTextInput(session, "npv_value_output",
       value = as.character(npv))
