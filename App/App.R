@@ -21,6 +21,7 @@ library(xts)
 library(dplyr)
 library(dygraphs)
 library(shiny)
+library(RColorBrewer)
 
 #' Define parameters of the powerwall battery.
 powerwall_spec = list(
@@ -172,20 +173,23 @@ server <- function(input, output) {
     dygraph(myxts_selected()[, c("demand_profile", "pv_array_output")], main = "Energy demand and generation", group = "may") %>%
       dyHighlight(highlightSeriesOpts = list(strokeWidth = 2)) %>%
       dyOptions(fillGraph = TRUE, fillAlpha = 0.1) %>%
-      dyRangeSelector()
+      dyRangeSelector() %>%
+      dyLegend(width = 500, show = "always")
   })
   
   output[["battery_percentage"]] <- renderDygraph({
     dygraph(myxts_selected()[, "battery_percentage"], main = "Battery charge (%)", group = "may") %>% 
       dyRangeSelector() %>%
       dyAxis("y", valueRange = c(0, 100.1)) %>%
-      dyOptions(fillGraph = TRUE, fillAlpha = 0.1)
+      dyOptions(fillGraph = TRUE, fillAlpha = 0.1, colors = RColorBrewer::brewer.pal(3, "Set1")) %>%
+      dyLegend(show = "always")
   })
   
   output[["energy_imported"]] <- renderDygraph({
     dygraph(myxts_selected()[, "energy_imported"], main = "Energy imported (+) / exported (-)", group = "may") %>% 
       dyRangeSelector() %>%
-      dyOptions(fillGraph = TRUE, fillAlpha = 0.1)
+      dyOptions(fillGraph = TRUE, fillAlpha = 0.1) %>%
+      dyLegend(show = "always")
   })
 }
 
