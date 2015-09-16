@@ -32,7 +32,8 @@ pv_inverters$efficiency <- as.numeric(as.character(pv_inverters$efficiency)) / 1
 write.csv2(pv_inverters, file = "pv_inverters.csv", row.names = FALSE)
 
 pv_inverters <- read.csv2("pv_inverters.csv")
-pv_inverter_spec <- as.list(pv_inverters[pv_inverters$model == "SE3000 (208V) w/ -ER-US or A-US", ])
+inverter_spec <- as.list(pv_inverters[pv_inverters$model == "SE3000 (208V) w/ -ER-US or A-US", ])
+
 
 
 #' Define parameters of the powerwall battery.
@@ -55,7 +56,6 @@ battery_spec <- powerwall_spec
 #+ datasets, cache=TRUE
 #demand_profiles <- read.table("Data/data1.csv", header = FALSE, sep = ";")
 #generation_normalized <- read.table("Data/pv30minsgen.csv", header = FALSE)[[1]]
-
 #save(demand_profiles, generation_normalized, file = "AppData.RData")
 load("AppData.RData")
 
