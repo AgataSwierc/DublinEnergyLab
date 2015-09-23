@@ -143,8 +143,6 @@ create_npv_table <- function(simulation_result, pv_array_size) {
   tariff_import <- energy_prices_residential$price[energy_consumption_band] # EUR
   tariff_import_change <- energy_prices_residential$price_change[energy_consumption_band] # change / year
   
-  discount_rate <- 0.08 # -
-  
   inverter_spec <- list(
     efficiency = 0.975, # -
     lifespan = 10 # year
@@ -215,6 +213,8 @@ create_npv_table <- function(simulation_result, pv_array_size) {
 }
 
 calculate_npv <- function(simulation_result, pv_array_size) {
+  discount_rate <- 0.08 # -
+  
   npv_table <- create_npv_table(simulation_result, pv_array_size)
   
   npv <- ceiling(sum(npv_table$net_cashflow / (1 + discount_rate) ^ npv_table$year_index))
