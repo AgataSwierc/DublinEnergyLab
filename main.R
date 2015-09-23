@@ -44,14 +44,15 @@ date_selected_start <- "2009-05-01"
 date_selected_end <- "2009-05-31"
 
 
-#pv_array_output - demand_profile - inverter_loss_pv - inverter_loss_battery - battery_roundtrip_loss + energy_imported - battery_input + battery_output
-s <- run_simulation()
-
-
-
 #runApp(app)
 #shinyAppDir("App")
 #runApp(app, launch.browser = FALSE)
+
+
+
+
+
+
 
 
 

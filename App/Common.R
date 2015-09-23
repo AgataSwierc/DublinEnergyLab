@@ -4,6 +4,7 @@ library(dplyr)
 library(dygraphs)
 library(shiny)
 library(RColorBrewer)
+library("testthat")
 
 #' Define parameters of the powerwall battery.
 powerwall_spec = list(
@@ -20,14 +21,19 @@ powerwall_spec = list(
   cost = 2654 # EUR
 )
 
-battery_spec <- powerwall_spec
+
 
 #' Load data from available files
 #+ datasets, cache=TRUE
 #demand_profiles <- read.table("Data/data1.csv", header = FALSE, sep = ";")
 #generation_normalized <- read.table("Data/pv30minsgen.csv", header = FALSE)[[1]]
 
-run_simulation <- function(pv_array_size = 8, demand_profile_index = 1, inverter_efficiency = 0.975) {
+run_simulation <- function(
+  pv_array_size = 8,
+  demand_profile_index = 1,
+  inverter_efficiency = 0.975,
+  battery_spec = powerwall_spec) {
+  
   inverter_spec <- list(
     efficiency = inverter_efficiency
   )
@@ -122,7 +128,7 @@ run_simulation <- function(pv_array_size = 8, demand_profile_index = 1, inverter
     battery_energy,
     energy_imported,
     battery_diff,
-    battery_percentage = battery_energy / battery_spec$capacity * 100)
+    battery_percentage = ifelse(battery_spec$capacity > 0, battery_energy / battery_spec$capacity * 100, 0))
   df
   return(xts(df, date))
 }
