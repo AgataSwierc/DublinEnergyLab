@@ -225,6 +225,10 @@ create_npv_table <- function(simulation_result, pv_array_size) {
   return(npv_table)
 }
 
+discount <- function(value, rate) {
+  value / (1 + rate) ^ (seq_along(value) - 1)
+}
+
 calculate_npv <- function(simulation_result, pv_array_size) {
   # Real discount rate
   discount_rate <- 0.08 # -
@@ -236,5 +240,21 @@ calculate_npv <- function(simulation_result, pv_array_size) {
   positive_year <- npv_table$year_index[npv_table$cumulative_balance > 0]
   spp <- if (length(positive_year) > 0) min(positive_year) else NA
   
-  return(list(npv = npv, spp = spp))
+  lcoe <- 
+    sum(discount(
+      npv_table$cashflow_investment + npv_table$outflow_maintainence + npv_table$outflow_inverter, 
+      discount_rate)) / 
+    sum(discount(
+      (npv_table$energy_demand - npv_table$energy_imported) + npv_table$energy_exported,
+      discount_rate))
+  
+  sir <- 
+    sum(discount(
+      npv_table$inflow_saving,
+      discount_rate))  /
+    sum(discount(
+      npv_table$cashflow_investment + npv_table$outflow_maintainence + npv_table$outflow_inverter, 
+      discount_rate))
+    
+  return(list(npv = npv, spp = spp, lcoe = lcoe, sir = sir))
 }
