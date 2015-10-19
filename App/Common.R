@@ -188,7 +188,7 @@ create_npv_table <- function(simulation_result, pv_array_size) {
 
   inverter_cost <- pv_array$capacity * inverter_cost_std
   
-  npv_table <- data.frame(year_index = 0:installation_lifespan)
+  npv_table <- data.frame(year_index = 0:(installation_lifespan-1))
   npv_table$energy_demand <- sum(year_result$demand_profile)
   
   npv_table$energy_exported <- sum(ifelse(year_result$energy_imported < 0, -year_result$energy_imported, 0))
