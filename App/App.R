@@ -327,6 +327,10 @@ server <- function(input, output, clientData, session) {
       value = as.character(result$npv))
     updateTextInput(session, "spp_value_output",
       value = ifelse(is.na(result$spp), "exceeds lifetime", as.character(result$spp)))
+    updateTextInput(session, "lcoe_value_output",
+      value = sprintf("%0.3f", result$lcoe))
+    updateTextInput(session, "sir_value_output",
+      value = sprintf("%0.3f", result$sir))
   })
 }
 
@@ -369,7 +373,9 @@ ui <- fluidPage(
         max = max(date)),
       h3("Output"),
       textInput("npv_value_output", "NPV:"),
-      textInput("spp_value_output", "SPP:")
+      textInput("spp_value_output", "SPP:"),
+      textInput("lcoe_value_output", "LCOE:"),
+      textInput("sir_value_output", "SIR:")
     ),
     mainPanel(width = 9,
       dygraphOutput("demand_profile_plot",
