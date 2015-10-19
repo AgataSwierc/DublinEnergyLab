@@ -18,10 +18,11 @@ powerwall_spec = list(
   voltage_range = c(350, 450), # Volts
   current_nominal = 5.8, # Amp
   current_peak = 8.6, # Amp
-  cost = 2654 # EUR
+  cost = 3000 # EUR
 )
 
-
+# Use Powerwall battery
+battery_spec <- powerwall_spec
 
 #' Load data from available files
 #+ datasets, cache=TRUE
@@ -145,9 +146,11 @@ create_npv_table <- function(simulation_result, pv_array_size) {
   energy_consumption_band <- as.numeric(cut(sum(year_result$demand_profile), c(0, 1000, 2500, 5000, 15000, 10e6)))
   
   installation_lifespan <- 25 # year
-  tariff_export <- 0.09 # EUR
+  tariff_export <- 0 # EUR
   tariff_import <- energy_prices_residential$price[energy_consumption_band] # EUR
-  tariff_import_change <- energy_prices_residential$price_change[energy_consumption_band] # change / year
+  # Assume constant price of the imported energy
+  #tariff_import_change <- energy_prices_residential$price_change[energy_consumption_band] # change / year
+  tariff_import_change <- 0 # change / year
   
   inverter_spec <- list(
     efficiency = 0.975, # -
@@ -166,24 +169,23 @@ create_npv_table <- function(simulation_result, pv_array_size) {
   )
   
   inverter_cost_std <- 619 # EUR/kWp
-  instrumentation_and_control_cost_std <- 177 # EUR/kWp
-  installation_electrical_cost_std <- 543 # EUR/kWp
-  installation_civil_cost_std <- 904 # EUR/kWp
-  installation_mechanical_cost_std <- 191 # EUR/kWp
-  maintenance_cost_std <- 109 # EUR/kWp
-  other_costs_std <- 88 # EUR/kWp
+  instrumentation_and_control_cost <- 177 # EUR
+  installation_electrical_cost <- 543 # EUR
+  installation_civil_cost <- 904 # EUR
+  installation_mechanical_cost <- 191 # EUR
+  maintenance_cost <- 50 # EUR/year
+  other_costs <- 88 # EUR
   
   initial_cost <-
     pv_array$cost +
     battery_spec$cost +
-    pv_array$capacity * (
-      inverter_cost_std +
-        instrumentation_and_control_cost_std +
-        installation_electrical_cost_std +
-        installation_civil_cost_std +
-        installation_mechanical_cost_std +
-        maintenance_cost_std +
-        other_costs_std)
+    pv_array$capacity * inverter_cost_std +
+    instrumentation_and_control_cost +
+    installation_electrical_cost +
+    installation_civil_cost +
+    installation_mechanical_cost +
+    other_costs
+
   inverter_cost <- pv_array$capacity * inverter_cost_std
   
   npv_table <- data.frame(year_index = 0:installation_lifespan)
@@ -205,27 +207,33 @@ create_npv_table <- function(simulation_result, pv_array_size) {
     npv_table$year_index > 0 & npv_table$year_index %% inverter_spec$lifespan == 0,
     inverter_cost, 0)
   
+  npv_table$outflow_maintainence <- maintenance_cost
+  
   npv_table$inflow <- npv_table$inflow_export + npv_table$inflow_saving
-  npv_table$outflow <-  npv_table$outflow_import + npv_table$outflow_inverter
+  npv_table$outflow <- npv_table$outflow_import +
+    npv_table$outflow_inverter +
+    npv_table$outflow_maintainence
   npv_table$cashflow_investment <- c(initial_cost, rep(0, nrow(npv_table) - 1))
   
   npv_table$net_cashflow <- npv_table$inflow - npv_table$outflow - npv_table$cashflow_investment
   
-  npv_table$spp <- cumsum(npv_table$inflow) - 
+  npv_table$cumulative_balance <- cumsum(npv_table$inflow) - 
     cumsum(npv_table$cashflow_investment) - 
-    cumsum(npv_table$outflow_inverter)
+    cumsum(npv_table$outflow_inverter) -
+    cumsum(npv_table$outflow_maintainence)
   
   return(npv_table)
 }
 
 calculate_npv <- function(simulation_result, pv_array_size) {
+  # Real discount rate
   discount_rate <- 0.08 # -
   
   npv_table <- create_npv_table(simulation_result, pv_array_size)
   
   npv <- ceiling(sum(npv_table$net_cashflow / (1 + discount_rate) ^ npv_table$year_index))
   
-  positive_year <- npv_table$year_index[npv_table$spp > 0]
+  positive_year <- npv_table$year_index[npv_table$cumulative_balance > 0]
   spp <- if (length(positive_year) > 0) min(positive_year) else NA
   
   return(list(npv = npv, spp = spp))
