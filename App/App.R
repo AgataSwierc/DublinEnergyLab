@@ -148,7 +148,7 @@ run_simulation <- function(
     battery_energy,
     energy_imported,
     battery_diff,
-    battery_percentage = ifelse(battery_spec$capacity > 0, battery_energy / battery_spec$capacity * 100, 0))
+    battery_percentage = if (battery_spec$capacity > 0) battery_energy / battery_spec$capacity * 100 else 0)
   df
   return(xts(df, date))
 }
