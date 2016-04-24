@@ -1,0 +1,8 @@
+name: pv-battery-system
+account: dublinenergylab
+server: shinyapps.io
+bundleId: 292234
+url: https://dublinenergylab.shinyapps.io/pv-battery-system
+when: 1445323625.6584
+asMultiple: FALSE
+asStatic: FALSE
