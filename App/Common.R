@@ -199,26 +199,27 @@ create_npv_table <- function(simulation_result, pv_array_size) {
 
   inverter_cost <- pv_array$capacity * inverter_cost_std
   
-  npv_table <- data.frame(year_index = 0:(installation_lifespan-1))
-  npv_table$energy_demand <- sum(year_result$demand_profile)
+  npv_table <- data.frame(year_index = 0:installation_lifespan)
+  investment_year <- npv_table$year_index == 0
+  operating_year <- npv_table$year_index > 0
+  npv_table$energy_demand <- operating_year * sum(year_result$demand_profile)
   
-  npv_table$energy_exported <- sum(ifelse(year_result$energy_imported < 0, -year_result$energy_imported, 0))
-  npv_table$energy_imported <- sum(ifelse(year_result$energy_imported > 0,  year_result$energy_imported, 0))
+  npv_table$energy_exported <- operating_year * sum(ifelse(year_result$energy_imported < 0, -year_result$energy_imported, 0))
+  npv_table$energy_imported <- operating_year * sum(ifelse(year_result$energy_imported > 0,  year_result$energy_imported, 0))
   
-  npv_table$tariff_export <- tariff_export
-  npv_table$tariff_import <- tariff_import * (1 + tariff_import_change) ^ npv_table$year_index
+  npv_table$tariff_export <- operating_year * tariff_export
+  npv_table$tariff_import <- operating_year * tariff_import * (1 + tariff_import_change) ^ npv_table$year_index
   
-  npv_table$inflow_export <- npv_table$tariff_export * npv_table$energy_exported
-  npv_table$inflow_saving <- npv_table$tariff_import * (npv_table$energy_demand - npv_table$energy_imported)
+  npv_table$inflow_export <- operating_year * npv_table$tariff_export * npv_table$energy_exported
+  npv_table$inflow_saving <- operating_year * npv_table$tariff_import * (npv_table$energy_demand - npv_table$energy_imported)
   
-  npv_table$outflow_import <- npv_table$tariff_import * npv_table$energy_imported
+  npv_table$outflow_import <- operating_year * npv_table$tariff_import * npv_table$energy_imported
   
-  npv_table$outflow_maintainence <- maintenance_cost
+  npv_table$outflow_maintainence <- operating_year * maintenance_cost
   
-  npv_table$inflow <- npv_table$inflow_export + npv_table$inflow_saving
-  npv_table$outflow <- npv_table$outflow_import +
-    npv_table$outflow_maintainence
-  npv_table$cashflow_investment <- c(initial_cost, rep(0, nrow(npv_table) - 1))
+  npv_table$inflow <- operating_year * (npv_table$inflow_export + npv_table$inflow_saving)
+  npv_table$outflow <- operating_year * (npv_table$outflow_import + npv_table$outflow_maintainence)
+  npv_table$cashflow_investment <- investment_year * initial_cost
   
   npv_table$net_cashflow <- npv_table$inflow - npv_table$outflow - npv_table$cashflow_investment
   

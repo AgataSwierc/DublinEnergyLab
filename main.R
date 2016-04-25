@@ -48,7 +48,9 @@ date_selected_end <- "2009-05-31"
 #shinyAppDir("App")
 #runApp(app, launch.browser = FALSE)
 
-
+simulation_result <- run_simulation()
+npv_table <- create_npv_table(simulation_result, 8)
+write.csv(npv_table, "npv_table.csv")
 
 
 
