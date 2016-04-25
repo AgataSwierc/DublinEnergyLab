@@ -173,7 +173,7 @@ create_npv_table <- function(simulation_result, pv_array_size) {
   installation_electrical_cost <- 543 # EUR
   installation_civil_cost <- 904 # EUR
   installation_mechanical_cost <- 191 # EUR
-  maintenance_cost <- 50 # EUR/year
+
   other_costs <- 88 # EUR
   
   initial_cost_option <- "new"
@@ -192,6 +192,10 @@ create_npv_table <- function(simulation_result, pv_array_size) {
     estimated_system_cost <- estimated_system_unit_cost * pv_array$capacity * 1000 # EUR
     initial_cost <- estimated_system_cost + battery_spec$cost
   }
+ 
+  # Maintainance cost takes into account inverter replacement
+  maintenance_ratio = 0.01 # 1% of CAPEX without the battery
+  maintenance_cost <- maintenance_ratio * (initial_cost - battery_spec$cost) # EUR/year
 
   inverter_cost <- pv_array$capacity * inverter_cost_std
   
@@ -209,16 +213,10 @@ create_npv_table <- function(simulation_result, pv_array_size) {
   
   npv_table$outflow_import <- npv_table$tariff_import * npv_table$energy_imported
   
-  # Include inverter replacement cost. Add it for years which match inverter lifespan.
-  npv_table$outflow_inverter <- ifelse(
-    npv_table$year_index > 0 & npv_table$year_index %% inverter_spec$lifespan == 0,
-    inverter_cost, 0)
-  
   npv_table$outflow_maintainence <- maintenance_cost
   
   npv_table$inflow <- npv_table$inflow_export + npv_table$inflow_saving
   npv_table$outflow <- npv_table$outflow_import +
-    npv_table$outflow_inverter +
     npv_table$outflow_maintainence
   npv_table$cashflow_investment <- c(initial_cost, rep(0, nrow(npv_table) - 1))
   
@@ -226,7 +224,6 @@ create_npv_table <- function(simulation_result, pv_array_size) {
   
   npv_table$cumulative_balance <- cumsum(npv_table$inflow) - 
     cumsum(npv_table$cashflow_investment) - 
-    cumsum(npv_table$outflow_inverter) -
     cumsum(npv_table$outflow_maintainence)
   
   return(npv_table)
@@ -249,7 +246,7 @@ calculate_npv <- function(simulation_result, pv_array_size) {
   
   lcoe <- 
     sum(discount(
-      npv_table$cashflow_investment + npv_table$outflow_maintainence + npv_table$outflow_inverter, 
+      npv_table$cashflow_investment + npv_table$outflow_maintainence, 
       discount_rate)) / 
     sum(discount(
       (npv_table$energy_demand - npv_table$energy_imported) + npv_table$energy_exported,
@@ -260,7 +257,7 @@ calculate_npv <- function(simulation_result, pv_array_size) {
       npv_table$inflow_saving,
       discount_rate))  /
     sum(discount(
-      npv_table$cashflow_investment + npv_table$outflow_maintainence + npv_table$outflow_inverter, 
+      npv_table$cashflow_investment + npv_table$outflow_maintainence, 
       discount_rate))
     
   return(list(npv = npv, spp = spp, lcoe = lcoe, sir = sir))
