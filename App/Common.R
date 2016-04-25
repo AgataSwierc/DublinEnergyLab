@@ -176,15 +176,22 @@ create_npv_table <- function(simulation_result, pv_array_size) {
   maintenance_cost <- 50 # EUR/year
   other_costs <- 88 # EUR
   
-  initial_cost <-
-    pv_array$cost +
-    battery_spec$cost +
-    pv_array$capacity * inverter_cost_std +
-    instrumentation_and_control_cost +
-    installation_electrical_cost +
-    installation_civil_cost +
-    installation_mechanical_cost +
-    other_costs
+  initial_cost_option <- "new"
+  if (initial_cost_option == "old") {
+    initial_cost <-
+      pv_array$cost +
+      battery_spec$cost +
+      pv_array$capacity * inverter_cost_std +
+      instrumentation_and_control_cost +
+      installation_electrical_cost +
+      installation_civil_cost +
+      installation_mechanical_cost +
+      other_costs
+  } else {
+    estimated_system_unit_cost <- 3 * pv_array$capacity ^ (-0.537) # EUR / Wp
+    estimated_system_cost <- estimated_system_unit_cost * pv_array$capacity * 1000 # EUR
+    initial_cost <- estimated_system_cost + battery_spec$cost
+  }
 
   inverter_cost <- pv_array$capacity * inverter_cost_std
   
