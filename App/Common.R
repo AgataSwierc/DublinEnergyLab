@@ -206,26 +206,30 @@ create_npv_table <- function(simulation_result, pv_array_size) {
   
   npv_table$energy_exported <- operating_year * sum(ifelse(year_result$energy_imported < 0, -year_result$energy_imported, 0))
   npv_table$energy_imported <- operating_year * sum(ifelse(year_result$energy_imported > 0,  year_result$energy_imported, 0))
+  npv_table$energy_demand_covered <- npv_table$energy_demand - npv_table$energy_imported
   
   npv_table$tariff_export <- operating_year * tariff_export
   npv_table$tariff_import <- operating_year * tariff_import * (1 + tariff_import_change) ^ npv_table$year_index
   
   npv_table$inflow_export <- operating_year * npv_table$tariff_export * npv_table$energy_exported
-  npv_table$inflow_saving <- operating_year * npv_table$tariff_import * (npv_table$energy_demand - npv_table$energy_imported)
-  
   npv_table$outflow_import <- operating_year * npv_table$tariff_import * npv_table$energy_imported
+  
+  # Energy exported is considered as a saving because it results in recuded bill from the energy supplier.
+  npv_table$inflow_saving <- operating_year * npv_table$tariff_import * npv_table$energy_demand_covered + 
+                             operating_year * npv_table$tariff_export * npv_table$energy_exported
   
   npv_table$outflow_maintainence <- operating_year * maintenance_cost
   
-  npv_table$inflow <- operating_year * (npv_table$inflow_export + npv_table$inflow_saving)
-  npv_table$outflow <- operating_year * (npv_table$outflow_import + npv_table$outflow_maintainence)
+  npv_table$inflow <- npv_table$inflow_saving
+  npv_table$outflow <- operating_year * npv_table$outflow_maintainence
   npv_table$cashflow_investment <- investment_year * initial_cost
   
   npv_table$net_cashflow <- npv_table$inflow - npv_table$outflow - npv_table$cashflow_investment
   
-  npv_table$cumulative_balance <- cumsum(npv_table$inflow) - 
-    cumsum(npv_table$cashflow_investment) - 
-    cumsum(npv_table$outflow_maintainence)
+  npv_table$cumulative_balance <- 
+    cumsum(npv_table$inflow) - 
+    cumsum(npv_table$outflow) -
+    cumsum(npv_table$cashflow_investment)
   
   return(npv_table)
 }
@@ -254,12 +258,13 @@ calculate_npv <- function(simulation_result, pv_array_size) {
       discount_rate))
   
   sir <- 
-    sum(discount(
-      npv_table$inflow_saving,
-      discount_rate))  /
-    sum(discount(
-      npv_table$cashflow_investment + npv_table$outflow_maintainence, 
-      discount_rate))
+    sum(discount(npv_table$inflow - npv_table$outflow, discount_rate))  /
+    sum(npv_table$cashflow_investment)
+
+  # Find the first year (min) where (which) cumulative (cumsum) discounted (dicount)
+  # balance is higher than zero or return NA if such year would exceed the lifetime.
+  dpp <- min(c(NA, which(
+    0 < cumsum(discount(npv_table$inflow - npv_table$outflow - npv_table$cashflow_investment, discount_rate)))))
     
-  return(list(npv = npv, spp = spp, lcoe = lcoe, sir = sir))
+  return(list(npv = npv, spp = spp, lcoe = lcoe, sir = sir, dpp = dpp))
 }
