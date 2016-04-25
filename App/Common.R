@@ -8,16 +8,13 @@ library("testthat")
 
 #' Define parameters of the powerwall battery.
 powerwall_spec = list(
-  #model = "10 kWh $3,500 For backup applications",
-  model = "7 kWh $3,000 For daily cycle applications",
-  capacity = 7, # kWh
-  efficiency = 0.92, #round-trip DC efficiency
-  power_nominal = 2.0, # kW
-  power_peak = 3.3, # kW
+  model = "Tesla Powerwall April 2016",
+  capacity = 6.4, # kWh
+  efficiency = 0.925, #round-trip DC efficiency
+  power_nominal = 3.3, # kW
   voltage_nominal = 350, # Volts
   voltage_range = c(350, 450), # Volts
-  current_nominal = 5.8, # Amp
-  current_peak = 8.6, # Amp
+  current_nominal = 9.5, # Amp
   cost = 3000 # EUR
 )
 
