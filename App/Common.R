@@ -134,11 +134,12 @@ run_simulation <- function(
 create_npv_table <- function(simulation_result, pv_array_size) {
   year_result <- simulation_result
   
+  # Residential elecrticity prices SEAI Q1 2015
   energy_prices_residential <- data.frame(
     band = c("DA", "DB", "DC", "DD", "DE"),
     band_range = c("< 1e+03", "(1e+03,2.5e+03]", "(2.5e+03,5e+03]", "(5e+03,1.5e+04]", "1.5e+04 <"),
-    price = c(0.665, 0.321, 0.254, 0.218, 0.182),
-    price_change = c(0.037, 0.075, 0.055, 0.036, 0.01))
+    price = c(0.697, 0.310, 0.243, 0.204, 0.174),
+    price_change = c(0.048, -0.035, -0.043, -0.066, -0.047))
   
   energy_consumption_band <- as.numeric(cut(sum(year_result$demand_profile), c(0, 1000, 2500, 5000, 15000, 10e6)))
   
