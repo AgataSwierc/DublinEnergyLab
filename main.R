@@ -44,6 +44,12 @@ date_selected_start <- "2009-05-01"
 date_selected_end <- "2009-05-31"
 
 
+demand_profiles <- dir("Data", pattern = "data.\\.csv", full.names = TRUE) %>%
+  lapply(function(path) read.table(path, header = FALSE, sep = ";")) %>%
+  do.call(what = cbind)
+save(demand_profiles, file = "Cache/demand_profiles.RData")
+
+
 #runApp(app)
 #shinyAppDir("App")
 #runApp(app, launch.browser = FALSE)
