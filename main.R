@@ -55,7 +55,7 @@ save(demand_profiles, file = "Cache/demand_profiles.RData")
 #runApp(app, launch.browser = FALSE)
 
 roofs <- read.csv("Data/roofs.csv", sep=";")
-roofs$AzimuthRounded <- round(roofs$Azimuth / (360 / 8)) * (360 / 8)
+roofs$AzimuthRounded <- round(roofs$Azimuth / (360 / 16)) * (360 / 16)
 roofs$AngleRounded <- round(roofs$Angle / 5) * 5
 
 
@@ -67,4 +67,11 @@ calculate_npv(simulation_result, 8)
 
 
 
+ggplot(roofs, aes(x = Area)) + geom_density()
 
+       
+a <- sapply(demand_profiles, sum)
+b <- data.frame(x = a)
+c <- b %>% filter(x < 5e4)
+ggplot(c, aes(x)) + geom_density()
+       

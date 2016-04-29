@@ -5,6 +5,7 @@ library(dygraphs)
 library(shiny)
 library(RColorBrewer)
 library("testthat")
+library("ggplot2")
 
 #' Define parameters of the powerwall battery.
 powerwall_spec = list(
