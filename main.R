@@ -54,11 +54,14 @@ save(demand_profiles, file = "Cache/demand_profiles.RData")
 #shinyAppDir("App")
 #runApp(app, launch.browser = FALSE)
 
+roofs <- read.csv("Data/roofs.csv", sep=";")
+
 simulation_result <- run_simulation()
 npv_table <- create_npv_table(simulation_result, 8)
 write.csv(npv_table, "npv_table.csv", row.names = FALSE)
 
 calculate_npv(simulation_result, 8)
+
 
 
 
