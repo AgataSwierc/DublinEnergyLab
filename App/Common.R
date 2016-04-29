@@ -37,7 +37,7 @@ run_simulation <- function(
   )
   
   pv_module <- list(
-    capacity = 0.215 # kWp
+    capacity = 0.245 # kWp
   )
   
   pv_array <- list(
@@ -156,7 +156,7 @@ create_npv_table <- function(simulation_result, pv_array_size) {
   )
   
   pv_module <- list(
-    capacity = 0.215, # kWp
+    capacity = 0.245, # kWp
     cost = 236 # EUR
   )
   
