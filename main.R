@@ -55,6 +55,9 @@ save(demand_profiles, file = "Cache/demand_profiles.RData")
 #runApp(app, launch.browser = FALSE)
 
 roofs <- read.csv("Data/roofs.csv", sep=";")
+roofs$AzimuthRounded <- round(roofs$Azimuth / (360 / 8)) * (360 / 8)
+roofs$AngleRounded <- round(roofs$Angle / 5) * 5
+
 
 simulation_result <- run_simulation()
 npv_table <- create_npv_table(simulation_result, 8)
