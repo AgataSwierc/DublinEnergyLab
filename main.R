@@ -89,11 +89,7 @@ roofs_bands[[1]] <- which(roofs$AreaBand == 1)
 roofs_bands[[2]] <- which(roofs$AreaBand == 2)
 roofs_bands[[3]] <- which(roofs$AreaBand == 3)
 
-# Pick demand profile, roof and azimuth at random
-band <- ceiling(runif(100, max = 3))
-demand_index <- demand_profiles_bands[[band]][ceiling(runif(1, max = length(demand_profiles_bands[[band]])))]
-roof_index <- roofs_bands[[band]][ceiling(runif(1, max = length(roofs_bands[[band]])))]
-azimuth <- round(runif(1, min = 90, max = 270) / 22.5) * 22.5
+
 
 
 ggplot(roofs, aes(Area)) + geom_histogram()
@@ -143,21 +139,129 @@ pv_module_spec <- list(
 )
 
 pv_module <- list(
+  model = "Panasonic VBHN245SJ25",
   capacity = pv_module_spec$capacity, # kWp
   area = pv_module_spec$area, # m^2
   # Decrease efficiency according to Lacour's analysis.
   efficiency = 0.94 * pv_module_spec$efficiency # %
 )
 
-pv_array_size <- 2
+pv_array_size <- 8
 pv_array <- list(
   capacity = pv_module$capacity * pv_array_size, # kWp
   area = pv_module$area * pv_array_size, # m^2
   size = pv_array_size,
   efficiency = pv_module$efficiency # %
 )
+ 
 
-pv_array_output <- pv_array$area * pv_array$efficiency * solar_radiations[["90"]][["20"]] # kW
+# Pick demand, roof, azimuth and output at random
+random_band <- ceiling(runif(1, max = 3))
+random_demand_index <- demand_profiles_bands[[random_band]][ceiling(runif(1, max = length(demand_profiles_bands[[random_band]])))]
+random_roof_index <- roofs_bands[[random_band]][ceiling(runif(1, max = length(roofs_bands[[random_band]])))]
+random_azimuth <- round(runif(1, min = 90, max = 270) / 22.5) * 22.5
 
+random_roof <- roofs[random_roof_index, ]
+random_demand <- demand_profiles[, random_demand_index]
+random_pv_array_output <- pv_array$area * pv_array$efficiency *
+  solar_radiations[[as.character(random_azimuth)]][[as.character(random_roof$AngleRounded)]] # kW
+
+calculate_yearly_energy_balance <- function(
+  date,
+  demand_profile,
+  pv_array_output,
+  inverter_spec,
+  battery_spec) {
   
+  #' Simulate charge/discharge cycles of the battery for the demand profile
+  #+ simulation, cache=TRUE
+  n <- length(demand_profile)
+  period <- 1 / (n / 365 / 24) # h
+  energy_imported <- rep(0, n) # kWh
+  battery_energy <- rep(0, n) # kWh
+  battery_energy_next <- rep(0, n) # kWh
+  battery_diff <- rep(0, n) # kWh
+  battery_roundtrip_loss <- rep(0, n) # kWh
+  inverter_input <- rep(0, n) # kWh
+  inverter_output <- rep(0, n) # kWh
+  inverter_loss <- rep(0, n) # kWh
   
+  for (i in 1:n) {
+    # Battery_energy starts as zero and flows from battery_energy_next variable
+    battery_energy[i] <- if (i == 1) 0 else battery_energy_next[i - 1]
+    
+    # Start with demand matching the demand profile 
+    ac_demand <- demand_profile[i]
+    dc_demand <- ac_demand / inverter_spec$efficiency
+    dc_diff <- dc_demand - pv_array_output[i]
+    
+    if (dc_diff > 0) {
+      # Demand was higher than what was generated. We need to get more energy.
+      
+      if (battery_energy[i] > 0) {
+        # Batter is not empty. We can use this energy.
+        
+        battery_diff[i] <- min(dc_diff, battery_energy[i], battery_spec$power_nominal * period)
+        
+        # Take energy from battery
+        battery_energy_next[i] <- battery_energy[i] - battery_diff[i]
+        
+        inverter_input[i] <- pv_array_output[i] + battery_diff[i]
+      } else {
+        # Battery is empty. Inverter input matches PV array output.
+        
+        inverter_input[i] <- pv_array_output[i]
+        battery_energy_next[i] <- battery_energy[i]
+      }
+    } else {
+      # Demand was lower than what was generated. We can save the extra energy.
+      
+      if (battery_energy[i] < battery_spec$capacity) {
+        # Battery is not full. We can save some energy in the battery.
+        
+        battery_diff[i] <- max(
+          - (battery_spec$capacity - battery_energy[i]) / battery_spec$efficiency,
+          dc_diff)
+        
+        # Save energy in the battery
+        battery_energy_next[i] <- battery_energy[i] - battery_diff[i] * battery_spec$efficiency
+        battery_roundtrip_loss[i] <- - battery_diff[i] * (1 - battery_spec$efficiency)
+        
+        inverter_input[i] <- pv_array_output[i] + battery_diff[i]
+      } else {
+        # Battery is full. We need to sell extra energy to the grid.
+        
+        inverter_input[i] <- pv_array_output[i]
+        battery_energy_next[i] <- battery_energy[i]
+      }
+    }
+    
+    inverter_output[i] <- inverter_input[i] * inverter_spec$efficiency
+    inverter_loss[i] <- inverter_input[i] * (1 - inverter_spec$efficiency)
+    
+    energy_imported[i] <- ac_demand - inverter_output[i]
+  }
+  
+  # Show result in a form of a graph
+  df <- data.frame(
+    pv_array_output,
+    demand_profile,
+    inverter_loss,
+    battery_roundtrip_loss,
+    battery_energy_next,
+    battery_energy,
+    energy_imported,
+    battery_diff,
+    battery_percentage = if (battery_spec$capacity > 0) battery_energy / battery_spec$capacity * 100 else 0)
+  df
+  return(xts(df, date))
+}
+
+
+balance <- calculate_yearly_energy_balance(
+  date,
+  random_demand,
+  random_pv_array_output,
+  inverter_spec,
+  powerwall_spec)
+
