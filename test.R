@@ -32,6 +32,7 @@ test_that("Energy balance is preserved", {
     - inverter_loss
     - battery_roundtrip_loss
     + energy_imported
+    - energy_exported
     - (battery_energy_next - battery_energy)))
   
   expect_less_than(max_discrepancy, 1e-10)

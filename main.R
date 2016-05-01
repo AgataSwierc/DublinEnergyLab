@@ -189,6 +189,7 @@ calculate_yearly_energy_balance <- function(
   inverter_input <- rep(0, n) # kWh
   inverter_output <- rep(0, n) # kWh
   inverter_loss <- rep(0, n) # kWh
+  energy_diff <- rep(0, n) # kWh
   
   for (i in 1:n) {
     # Battery_energy starts as zero and flows from battery_energy_next variable
@@ -243,8 +244,13 @@ calculate_yearly_energy_balance <- function(
     inverter_output[i] <- inverter_input[i] * inverter_spec$efficiency
     inverter_loss[i] <- inverter_input[i] * (1 - inverter_spec$efficiency)
     
-    energy_imported[i] <- ac_demand - inverter_output[i]
+    # Energy difference between demand and generated (after inverter).
+    energy_diff[i] <- ac_demand - inverter_output[i]
   }
+  
+  # Check the sign to tell if the ennergy difference is for import or export.
+  energy_imported <- ifelse(energy_diff > 0, energy_diff, 0)
+  energy_exported <- ifelse(energy_diff < 0, -energy_diff, 0)
   
   # Gather all values in a signel data frame
   return(data.frame(
@@ -254,7 +260,9 @@ calculate_yearly_energy_balance <- function(
     battery_roundtrip_loss,
     battery_energy_next,
     battery_energy,
+    energy_diff,
     energy_imported,
+    energy_exported,
     battery_diff,
     battery_percentage = if (battery_spec$capacity > 0) battery_energy / battery_spec$capacity * 100 else 0))
 }
@@ -265,6 +273,7 @@ calculate_yearly_energy_balance <- function(
 #' @param inverter_spec Inverter specification.
 #' @param battery_spec Battery specification.
 #' @param pv_module_spec PV module specification.
+#' @param lifetime_length lifetime length in years.
 calculate_lifetime_energy_balance <- function(
   demand_profile,
   pv_array_output,
@@ -295,10 +304,17 @@ calculate_lifetime_energy_balance <- function(
 }
 
 
-balance <- calculate_yearly_energy_balance(
-  date,
+balance <- calculate_lifetime_energy_balance(
   random_demand,
   random_pv_array_output,
   inverter_spec,
-  powerwall_spec)
+  powerwall_spec,
+  pv_module_spec,
+  25)
+
+balance %>%
+  group_by(year) %>%
+  summarize_each(funs="sum")
+
+
 
