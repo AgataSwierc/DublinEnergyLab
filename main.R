@@ -66,7 +66,7 @@ ggplot(roofs, aes(x = Area)) + geom_density()
 
 demand_profiles <- dir("Data", pattern = "data.\\.csv", full.names = TRUE) %>%
   lapply(function(path) read.table(path, header = FALSE, sep = ";")) %>%
-  do.call(what = cbind)
+  do.call(what = cbind) # kW
 save(demand_profiles, file = "Cache/demand_profiles.RData")
 load("Cache/demand_profiles.RData")
 
@@ -107,3 +107,57 @@ b <- data.frame(x = a)
 c <- b %>% filter(x < 5e4)
 ggplot(c, aes(x)) + geom_density()
        
+
+read_radiation <- function(direction) {
+  radiation_part <- read.delim(sprintf("Data/Radiation_0.5h_Article/Radiation_Power_%s.out", direction), header=FALSE, skip = 2)
+  # Ignore hour column
+  radiation_part[[1]] <- NULL
+  # Ignore last column
+  radiation_part[[8]] <- NULL
+  # Select only one year
+  radiation_part <- radiation_part[1:17520, ]
+  # Set the right names
+  names(radiation_part) <- c("20", "25", "30", "35", "40", "45", "50")
+  # Convert from [kJ/ (h * m^2)] to [kW / m^2]
+  radiation_part <- radiation_part / 3600
+  return(radiation_part)
+}
+
+solar_radiations <- list(
+  "90"    = read_radiation("E"),
+  "112.5" = read_radiation("SEE"),
+  "135"   = read_radiation("SE"),
+  "157.5" = read_radiation("SSE"),
+  "180"   = read_radiation("S"),
+  "202.5" = read_radiation("SSW"),
+  "225"   = read_radiation("SW"),
+  "247.5" = read_radiation("SWW"),
+  "270"   = read_radiation("W"))
+  
+summary(solar_radiations[["180"]])
+
+pv_module_spec <- list(
+  capacity = 0.245, # kWp
+  area = 1.26, # m^2
+  efficiency = 0.194 # %
+)
+
+pv_module <- list(
+  capacity = pv_module_spec$capacity, # kWp
+  area = pv_module_spec$area, # m^2
+  # Decrease efficiency according to Lacour's analysis.
+  efficiency = 0.94 * pv_module_spec$efficiency # %
+)
+
+pv_array_size <- 2
+pv_array <- list(
+  capacity = pv_module$capacity * pv_array_size, # kWp
+  area = pv_module$area * pv_array_size, # m^2
+  size = pv_array_size,
+  efficiency = pv_module$efficiency # %
+)
+
+pv_array_output <- pv_array$area * pv_array$efficiency * solar_radiations[["90"]][["20"]] # kW
+
+  
+  

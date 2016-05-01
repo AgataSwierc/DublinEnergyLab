@@ -42,7 +42,7 @@ run_simulation <- function(
   )
   
   pv_array <- list(
-    capacity = pv_module$capacity * pv_array_size,
+    capacity = pv_module$capacity * pv_array_size, # kWp
     size = pv_array_size
   )  
   
