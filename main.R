@@ -312,9 +312,8 @@ balance <- calculate_lifetime_energy_balance(
   pv_module_spec,
   25)
 
-balance %>%
-  group_by(year) %>%
-  summarize_each(funs="sum")
-
-
+calculate_cashflow_summary(
+  energy_balance,
+  pv_array_spec,
+  battery_spec)
 

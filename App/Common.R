@@ -132,8 +132,10 @@ run_simulation <- function(
   return(xts(df, date))
 }
 
-create_npv_table <- function(simulation_result, pv_array_size) {
-  year_result <- simulation_result
+calculate_cashflow_summary <- function(
+  energy_balance,
+  pv_array_spec,
+  battery_spec) {
   
   # Residential elecrticity prices SEAI Q1 2015
   energy_prices_residential <- data.frame(
@@ -141,96 +143,64 @@ create_npv_table <- function(simulation_result, pv_array_size) {
     band_range = c("< 1e+03", "(1e+03,2.5e+03]", "(2.5e+03,5e+03]", "(5e+03,1.5e+04]", "1.5e+04 <"),
     price = c(0.697, 0.310, 0.243, 0.204, 0.174),
     price_change = c(0.048, -0.035, -0.043, -0.066, -0.047))
+  energy_consumption_band <- as.numeric(cut(sum(energy_balance$demand_profile), c(0, 1000, 2500, 5000, 15000, 10e6)))
   
-  energy_consumption_band <- as.numeric(cut(sum(year_result$demand_profile), c(0, 1000, 2500, 5000, 15000, 10e6)))
-  
-  installation_lifespan <- 25 # year
-  tariff_export <- 0 # EUR
-  tariff_import <- energy_prices_residential$price[energy_consumption_band] # EUR
   # Assume constant price of the imported energy
   #tariff_import_change <- energy_prices_residential$price_change[energy_consumption_band] # change / year
   tariff_import_change <- 0 # change / year
   
-  inverter_spec <- list(
-    efficiency = 0.975, # -
-    lifespan = 10 # year
-  )
-  
-  pv_module <- list(
-    capacity = 0.245, # kWp
-    cost = 236 # EUR
-  )
-  
-  pv_array <- list(
-    capacity = pv_module$capacity * pv_array_size, # kWp
-    size = pv_array_size, # -
-    cost = pv_module$cost * pv_array_size # EUR
-  )
-  
-  inverter_cost_std <- 619 # EUR/kWp
-  instrumentation_and_control_cost <- 177 # EUR
-  installation_electrical_cost <- 543 # EUR
-  installation_civil_cost <- 904 # EUR
-  installation_mechanical_cost <- 191 # EUR
+  estimated_system_unit_cost <- 3 * pv_array_spec$capacity ^ (-0.537) # EUR / Wp
+  estimated_system_cost <- estimated_system_unit_cost * pv_array_spec$capacity * 1000 # EUR
+  initial_cost <- estimated_system_cost + battery_spec$cost
 
-  other_costs <- 88 # EUR
-  
-  initial_cost_option <- "new"
-  if (initial_cost_option == "old") {
-    initial_cost <-
-      pv_array$cost +
-      battery_spec$cost +
-      pv_array$capacity * inverter_cost_std +
-      instrumentation_and_control_cost +
-      installation_electrical_cost +
-      installation_civil_cost +
-      installation_mechanical_cost +
-      other_costs
-  } else {
-    estimated_system_unit_cost <- 3 * pv_array$capacity ^ (-0.537) # EUR / Wp
-    estimated_system_cost <- estimated_system_unit_cost * pv_array$capacity * 1000 # EUR
-    initial_cost <- estimated_system_cost + battery_spec$cost
-  }
- 
   # Maintainance cost takes into account inverter replacement
   maintenance_ratio = 0.01 # 1% of CAPEX without the battery
   maintenance_cost <- maintenance_ratio * (initial_cost - battery_spec$cost) # EUR/year
-
-  inverter_cost <- pv_array$capacity * inverter_cost_std
   
-  npv_table <- data.frame(year_index = 0:installation_lifespan)
-  investment_year <- npv_table$year_index == 0
-  operating_year <- npv_table$year_index > 0
-  npv_table$energy_demand <- operating_year * sum(year_result$demand_profile)
+  cashflow_summary <- balance %>%
+    group_by(year) %>%
+    summarize_each(funs="sum") %>%
+    arrange(year) %>%
+    mutate(
+      energy_consumption_band = as.numeric(cut(demand_profile, c(0, 1000, 2500, 5000, 15000, 10e6))),
+      tariff_import = energy_prices_residential$price[energy_consumption_band] * (1 + tariff_import_change) ^ (year - 1), # EUR
+      tariff_export = 0 # EUR
+    ) %>%
+    transmute(
+      year,
+      energy_demand = demand_profile,
+      energy_demand_covered = energy_demand - energy_imported,
+      energy_imported,
+      energy_exported,
+      tariff_import,
+      tariff_export,
+      inflow_export = tariff_export * energy_exported,
+      # Energy exported is considered as a saving because it results in recuded bill from the energy
+      # supplier.
+      inflow_saving = tariff_import * energy_demand_covered + tariff_export * energy_exported,
+      outflow_import = tariff_import * energy_imported,
+      outflow_maintainence = maintenance_cost,
+      # Inflow comes purely from savings.
+      inflow = inflow_saving,
+      # Outflow comes from maintainence cost ast the cost of imported energy are unrelated to the
+      # investment.
+      outflow = outflow_maintainence
+    ) %>%
+    # Associate initial cost with the pseudo-year zero. 
+    bind_rows(data.frame(year = 0, cashflow_investment = initial_cost)) %>%
+    arrange(year)
   
-  npv_table$energy_exported <- operating_year * sum(ifelse(year_result$energy_imported < 0, -year_result$energy_imported, 0))
-  npv_table$energy_imported <- operating_year * sum(ifelse(year_result$energy_imported > 0,  year_result$energy_imported, 0))
-  npv_table$energy_demand_covered <- npv_table$energy_demand - npv_table$energy_imported
+  # Replace NA values with zeros for the pseudo-year and column cashflow_investment
+  cashflow_summary[is.na(cashflow_summary)] <- 0
   
-  npv_table$tariff_export <- operating_year * tariff_export
-  npv_table$tariff_import <- operating_year * tariff_import * (1 + tariff_import_change) ^ npv_table$year_index
+  # Calculate the final cashflows
+  cashflow_summary <- cashflow_summary %>%
+    mutate(
+      net_cashflow = inflow - outflow - cashflow_investment,
+      net_cashflow_cumulative = cumsum(net_cashflow)
+    )
   
-  npv_table$inflow_export <- operating_year * npv_table$tariff_export * npv_table$energy_exported
-  npv_table$outflow_import <- operating_year * npv_table$tariff_import * npv_table$energy_imported
-  
-  # Energy exported is considered as a saving because it results in recuded bill from the energy supplier.
-  npv_table$inflow_saving <- operating_year * npv_table$tariff_import * npv_table$energy_demand_covered + 
-                             operating_year * npv_table$tariff_export * npv_table$energy_exported
-  
-  npv_table$outflow_maintainence <- operating_year * maintenance_cost
-  
-  npv_table$inflow <- npv_table$inflow_saving
-  npv_table$outflow <- operating_year * npv_table$outflow_maintainence
-  npv_table$cashflow_investment <- investment_year * initial_cost
-  
-  npv_table$net_cashflow <- npv_table$inflow - npv_table$outflow - npv_table$cashflow_investment
-  
-  npv_table$cumulative_balance <- 
-    cumsum(npv_table$inflow) - 
-    cumsum(npv_table$outflow) -
-    cumsum(npv_table$cashflow_investment)
-  
-  return(npv_table)
+  return(cashflow_summary)
 }
 
 discount <- function(value, rate) {
