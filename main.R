@@ -149,7 +149,7 @@ lifetime_length <- 25
 
 
 results <- data.frame()
-for(i in 1:2){
+for(i in 1:200){
   # Pick demand, roof, azimuth and output at random
   random_band <- ceiling(runif(1, max = 3))
   random_demand_index <- demand_profiles_bands[[random_band]][ceiling(runif(1, max = length(demand_profiles_bands[[random_band]])))]
@@ -196,6 +196,7 @@ for(i in 1:2){
       roof_index = random_roof_index,
       azimuth = random_azimuth,
       pv_array_size = pv_array_size,
+      solar_energy_demand_ratio = sum(cashflow_summary$energy_demand_covered) / sum(cashflow_summary$energy_demand),
       npv = economical_indicators$npv,
       spp = economical_indicators$spp,
       lcoe = economical_indicators$lcoe,
