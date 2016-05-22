@@ -153,24 +153,56 @@ random_roof_index <- roofs_bands[[random_band]][ceiling(runif(1, max = length(ro
 random_azimuth <- round(runif(1, min = 90, max = 270) / 22.5) * 22.5
 
 random_roof <- roofs[random_roof_index, ]
-random_demand <- demand_profiles[, random_demand_index]
-random_pv_array_output <- pv_array$area * pv_array$efficiency *
-  solar_radiations[[as.character(random_azimuth)]][[as.character(random_roof$AngleRounded)]] # kW
+random_demand <- demand_profiles[, random_demand_index] # [kW]
+random_roof_radiation <- solar_radiations[[as.character(random_azimuth)]][[as.character(random_roof$AngleRounded)]] # [kW / m^2]
+
+lifetime_length <- 25
+
+
+# Stop if the pv module area would be greater than what would fit on the roof.
+pv_array_size_max <- floor((0.8 * random_roof$Area) / pv_module_spec$area)
+progress <- progress_estimated(pv_array_size_max)
+for (pv_array_size in 1:pv_array_size_max) {
+  pv_array_spec <- list(
+    capacity = pv_module_spec$capacity * pv_array_size, # kWp
+    area = pv_module_spec$area * pv_array_size, # m^2
+    size = pv_array_size,
+    efficiency = pv_module_spec$efficiency # %
+  )
+
+  random_pv_array_output <- pv_array_spec$area * pv_array_spec$efficiency * random_roof_radiation # kW
+  
+  energy_balance <- calculate_lifetime_energy_balance(
+    random_demand,
+    random_pv_array_output,
+    inverter_spec,
+    powerwall_spec,
+    pv_module_spec,
+    lifetime_length)
+  
+  cashflow_summary <- calculate_cashflow_summary(
+    energy_balance,
+    pv_array_spec,
+    battery_spec)
+  
+  economical_indicators <- calculate_economical_indicators(cashflow_summary)
+  
+  da
+  
+  #print(economical_indicators)
+  progress$tick()
+  progress$print()
+}
+progress$stop()
+progress$print()
 
 
 
-energy_balance <- calculate_lifetime_energy_balance(
-  random_demand,
-  random_pv_array_output,
-  inverter_spec,
-  powerwall_spec,
-  pv_module_spec,
-  25)
 
-cashflow_summary <- calculate_cashflow_summary(
-  energy_balance,
-  pv_array_spec,
-  battery_spec)
 
-calculate_economical_indicators(cashflow_summary)
+
+
+
+
+
 
