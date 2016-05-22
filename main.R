@@ -144,65 +144,72 @@ pv_array <- list(
 )
 
 pv_array_spec <- pv_array
- 
-
-# Pick demand, roof, azimuth and output at random
-random_band <- ceiling(runif(1, max = 3))
-random_demand_index <- demand_profiles_bands[[random_band]][ceiling(runif(1, max = length(demand_profiles_bands[[random_band]])))]
-random_roof_index <- roofs_bands[[random_band]][ceiling(runif(1, max = length(roofs_bands[[random_band]])))]
-random_azimuth <- round(runif(1, min = 90, max = 270) / 22.5) * 22.5
-
-random_roof <- roofs[random_roof_index, ]
-random_demand <- demand_profiles[, random_demand_index] # [kW]
-random_roof_radiation <- solar_radiations[[as.character(random_azimuth)]][[as.character(random_roof$AngleRounded)]] # [kW / m^2]
 
 lifetime_length <- 25
 
 
-# Stop if the pv module area would be greater than what would fit on the roof.
-pv_array_size_max <- floor((0.8 * random_roof$Area) / pv_module_spec$area)
-progress <- progress_estimated(pv_array_size_max)
-for (pv_array_size in 1:pv_array_size_max) {
-  pv_array_spec <- list(
-    capacity = pv_module_spec$capacity * pv_array_size, # kWp
-    area = pv_module_spec$area * pv_array_size, # m^2
-    size = pv_array_size,
-    efficiency = pv_module_spec$efficiency # %
-  )
-
-  random_pv_array_output <- pv_array_spec$area * pv_array_spec$efficiency * random_roof_radiation # kW
+results <- data.frame()
+for(i in 1:2){
+  # Pick demand, roof, azimuth and output at random
+  random_band <- ceiling(runif(1, max = 3))
+  random_demand_index <- demand_profiles_bands[[random_band]][ceiling(runif(1, max = length(demand_profiles_bands[[random_band]])))]
+  random_roof_index <- roofs_bands[[random_band]][ceiling(runif(1, max = length(roofs_bands[[random_band]])))]
+  random_azimuth <- round(runif(1, min = 90, max = 270) / 22.5) * 22.5
   
-  energy_balance <- calculate_lifetime_energy_balance(
-    random_demand,
-    random_pv_array_output,
-    inverter_spec,
-    powerwall_spec,
-    pv_module_spec,
-    lifetime_length)
+  random_roof <- roofs[random_roof_index, ]
+  random_demand <- demand_profiles[, random_demand_index] # [kW]
+  random_roof_radiation <- solar_radiations[[as.character(random_azimuth)]][[as.character(random_roof$AngleRounded)]] # [kW / m^2]
   
-  cashflow_summary <- calculate_cashflow_summary(
-    energy_balance,
-    pv_array_spec,
-    battery_spec)
+  # Stop if the pv module area would be greater than what would fit on the roof.
+  pv_array_size_max <- floor((0.8 * random_roof$Area) / pv_module_spec$area)
+  progress <- progress_estimated(pv_array_size_max)
   
-  economical_indicators <- calculate_economical_indicators(cashflow_summary)
+  for (pv_array_size in 1:pv_array_size_max) {
+    pv_array_spec <- list(
+      capacity = pv_module_spec$capacity * pv_array_size, # kWp
+      area = pv_module_spec$area * pv_array_size, # m^2
+      size = pv_array_size,
+      efficiency = pv_module_spec$efficiency # %
+    )
   
-  da
-  
-  #print(economical_indicators)
-  progress$tick()
+    random_pv_array_output <- pv_array_spec$area * pv_array_spec$efficiency * random_roof_radiation # kW
+    
+    energy_balance <- calculate_lifetime_energy_balance(
+      random_demand,
+      random_pv_array_output,
+      inverter_spec,
+      powerwall_spec,
+      pv_module_spec,
+      lifetime_length)
+    
+    cashflow_summary <- calculate_cashflow_summary(
+      energy_balance,
+      pv_array_spec,
+      battery_spec)
+    
+    economical_indicators <- calculate_economical_indicators(cashflow_summary)
+    
+    results_partial <- data.frame(
+      index = i,
+      band = random_band,
+      demand_index = random_demand_index,
+      roof_index = random_roof_index,
+      azimuth = random_azimuth,
+      pv_array_size = pv_array_size,
+      npv = economical_indicators$npv,
+      spp = economical_indicators$spp,
+      lcoe = economical_indicators$lcoe,
+      sir = economical_indicators$sir,
+      dpp = economical_indicators$dpp)
+    
+    results <- rbind(results, results_partial)
+    
+    progress$tick()
+    progress$print()
+  }
+  progress$stop()
   progress$print()
 }
-progress$stop()
-progress$print()
 
-
-
-
-
-
-
-
-
-
+ggplot(results, aes(x = pv_array_size, y=npv, col=as.factor(demand_index))) + geom_line()
 
