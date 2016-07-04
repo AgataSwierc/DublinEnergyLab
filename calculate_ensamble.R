@@ -30,17 +30,17 @@ pv_module_spec$efficiency <-  0.94 * pv_module_spec$efficiency
 
 
 #' Load demand profiles.
-load("Cache/demand_profiles.RData")
+load("Cache/energy_demand_profiles.RData")
 
 
 #' Define bands for demand profiles
-demand_profiles_sums <- sapply(demand_profiles, sum)
-demand_profiles_bands_levels <- as.numeric(cut(demand_profiles_sums,
-                                               quantile(demand_profiles_sums, c(0, 0.05, 0.35, 0.65 ,0.95, 1))))
-demand_profiles_bands <- list()
-demand_profiles_bands[[1]] <- which(demand_profiles_bands_levels == 2)
-demand_profiles_bands[[2]] <- which(demand_profiles_bands_levels == 3)
-demand_profiles_bands[[3]] <- which(demand_profiles_bands_levels == 4)
+energy_demand_profiles_sums <- sapply(energy_demand_profiles, sum)
+energy_demand_profiles_bands_levels <- as.numeric(cut(energy_demand_profiles_sums,
+  quantile(energy_demand_profiles_sums, c(0, 0.05, 0.35, 0.65 ,0.95, 1))))
+energy_demand_profiles_bands <- list()
+energy_demand_profiles_bands[[1]] <- which(energy_demand_profiles_bands_levels == 2)
+energy_demand_profiles_bands[[2]] <- which(energy_demand_profiles_bands_levels == 3)
+energy_demand_profiles_bands[[3]] <- which(energy_demand_profiles_bands_levels == 4)
 
 
 #' Load roofs.
@@ -70,12 +70,12 @@ results <- data.frame()
 for(i in 1:200){
   # Pick demand, roof, azimuth and output at random
   random_band <- ceiling(runif(1, max = 3))
-  random_demand_index <- demand_profiles_bands[[random_band]][ceiling(runif(1, max = length(demand_profiles_bands[[random_band]])))]
+  random_demand_index <- energy_demand_profiles_bands[[random_band]][ceiling(runif(1, max = length(energy_demand_profiles_bands[[random_band]])))]
   random_roof_index <- roofs_bands[[random_band]][ceiling(runif(1, max = length(roofs_bands[[random_band]])))]
   random_azimuth <- round(runif(1, min = 90, max = 270) / 22.5) * 22.5
   
   random_roof <- roofs[random_roof_index, ]
-  random_demand <- demand_profiles[, random_demand_index] # [kW]
+  random_demand <- energy_demand_profiles[, random_demand_index] # [kW]
   random_roof_radiation <- solar_radiations[[as.character(random_azimuth)]][[as.character(random_roof$AngleRounded)]] # [kW / m^2]
   
   # Stop if the pv module area would be greater than what would fit on the roof.

@@ -29,9 +29,9 @@ write.csv2(pv_inverters, file = "pv_inverters.csv", row.names = FALSE)
 
 #' Load data from available files
 #+ datasets, cache=TRUE
-#demand_profiles <- read.table("Data/data1.csv", header = FALSE, sep = ";")
+#energy_demand_profiles <- read.table("Data/data1.csv", header = FALSE, sep = ";")
 #generation_normalized <- read.table("Data/pv30minsgen.csv", header = FALSE)[[1]]
-#save(demand_profiles, generation_normalized, file = "AppData.RData")
+#save(energy_demand_profiles, generation_normalized, file = "AppData.RData")
 load("AppData.RData")
 
 date <- seq(as.POSIXct("2009-01-01 00:00"), as.POSIXct("2009-12-31 23:30"), by = 30 * 60)
@@ -89,6 +89,19 @@ pv_array_spec <- pv_array
 
 
 
-summary(cut(colSums(demand_profiles), c(0, 1000, 2500, 5000, 15000, 10e6))) / length(demand_profiles)
+summary(cut(colSums(energy_demand_profiles), c(0, 1000, 2500, 5000, 15000, 10e6))) / length(energy_demand_profiles)
+
+
+date <- seq(as.POSIXct("2009-01-01 00:00"), as.POSIXct("2009-12-31 23:30"), by = 30 * 60)
+date_selected_start <- "2009-12-14"
+date_selected_end <- "2009-12-21"
+
+df <- energy_demand_profiles[(date_selected_start < date) & (date < date_selected_end), 1:5]
+
+
+
+        
+        
+
 
 

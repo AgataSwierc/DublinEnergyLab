@@ -2,8 +2,8 @@ context("calculate_yearly_energy_balance")
 
 test_that("System with no PV system imports all the energy", {
   balance <- calculate_yearly_energy_balance(
-    demand_profile = demand_profiles[, 1],
-    pv_array_output = rep(0, nrow(demand_profiles)),
+    energy_demand_profile = energy_demand_profiles[, 1],
+    pv_array_output = rep(0, nrow(energy_demand_profiles)),
     inverter_spec = list(
       efficiency = 0),
     battery_spec = list(
@@ -21,14 +21,14 @@ test_that("System with no PV system imports all the energy", {
 
 test_that("Energy balance is preserved", {
   balance <- calculate_yearly_energy_balance(
-    demand_profile = demand_profiles[, 1],
+    energy_demand_profile = energy_demand_profiles[, 1],
     pv_array_output = 1.83 * solar_radiations[["157.5"]][["30"]],
     inverter_spec = pv_inverters[pv_inverters$model == "SE3000 (208V) w/ -ER-US or A-US", ],
     battery_spec = powerwall_spec)
   
   max_discrepancy <- max(with(balance,
     + pv_array_output
-    - demand_profile
+    - energy_demand_profile
     - inverter_loss
     - battery_roundtrip_loss
     + energy_imported
@@ -43,7 +43,7 @@ context("calculate_lifetime_energy_balance")
 test_that("Lifetime balance rowsfor each year and energy_imported is increasing", {
   lifetime_length <- 2
   balance <- calculate_lifetime_energy_balance(
-    demand_profile = demand_profiles[, 1],
+    energy_demand_profile = energy_demand_profiles[, 1],
     pv_array_output = 1.83 * solar_radiations[["157.5"]][["30"]],
     inverter_spec = pv_inverters[pv_inverters$model == "SE3000 (208V) w/ -ER-US or A-US", ],
     battery_spec = powerwall_spec,
@@ -51,7 +51,7 @@ test_that("Lifetime balance rowsfor each year and energy_imported is increasing"
     lifetime_length = lifetime_length)
   
   # Check the number of rows in the balance data frame.
-  expect_equal(nrow(balance), lifetime_length * nrow(demand_profiles))
+  expect_equal(nrow(balance), lifetime_length * nrow(energy_demand_profiles))
   
   # Check if energy_imported is decreasing.
   df <- balance %>%

@@ -1,7 +1,14 @@
-demand_profiles <- dir("Data", pattern = "data.\\.csv", full.names = TRUE) %>%
+#' Load power profiles ([kW]).
+power_demand_profiles <- dir("Data", pattern = "data.\\.csv", full.names = TRUE) %>%
   lapply(function(path) read.table(path, header = FALSE, sep = ";")) %>%
   do.call(what = cbind) # kW
-save(demand_profiles, file = "Cache/demand_profiles.RData")
+power_demand_profiles_period <- 0.5 # h
+  
+#' Convert power profiles to energy profiles.
+energy_demand_profiles <- power_demand_profiles * power_demand_profiles_period # kWh 
+
+#' Save energy profiles data frame for faster loading.
+save(energy_demand_profiles, file = "Cache/energy_demand_profiles.RData")
 
 
 solar_radiations <- list(
