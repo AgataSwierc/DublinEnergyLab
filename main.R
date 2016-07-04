@@ -89,8 +89,6 @@ pv_array_spec <- pv_array
 
 
 
+summary(cut(colSums(demand_profiles), c(0, 1000, 2500, 5000, 15000, 10e6))) / length(demand_profiles)
 
-
-
-ggplot(results, aes(x = pv_array_size, y=npv, col=as.factor(demand_index))) + geom_line()
 
