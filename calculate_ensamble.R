@@ -8,6 +8,8 @@ lifetime_length <- 25
 
 #' Initialize inverter specification.
 pv_inverters <- read.csv2("pv_inverters.csv")
+
+#' Select inverter specification for the simulation.
 inverter_spec <- as.list(pv_inverters[pv_inverters$model == "SE3000 (208V) w/ -ER-US or A-US", ])
 
 
@@ -25,11 +27,12 @@ pv_module_spec <- list(
     year = c(1, 11, 26),
     guarantee = c(1.0, 0.90, 0.80))
 )
-# Decrease efficiency according to Lacour's analysis.
+
+#' Decrease module efficiency according to Lacour's analysis.
 pv_module_spec$efficiency <-  0.94 * pv_module_spec$efficiency
 
 
-#' Load demand profiles.
+#' Load energy demand profiles.
 load("Cache/energy_demand_profiles.RData")
 
 
@@ -65,17 +68,18 @@ roofs_bands[[3]] <- which(roofs$AreaBand == 3)
 #' Load solar radiation.
 load("Data/solar_radiations.RData")
 
+sample_period <- 0.5 # [h]
 
 results <- data.frame()
 for(i in 1:200){
   # Pick demand, roof, azimuth and output at random
   random_band <- ceiling(runif(1, max = 3))
-  random_demand_index <- energy_demand_profiles_bands[[random_band]][ceiling(runif(1, max = length(energy_demand_profiles_bands[[random_band]])))]
+  random_energy_demand_index <- energy_demand_profiles_bands[[random_band]][ceiling(runif(1, max = length(energy_demand_profiles_bands[[random_band]])))]
   random_roof_index <- roofs_bands[[random_band]][ceiling(runif(1, max = length(roofs_bands[[random_band]])))]
   random_azimuth <- round(runif(1, min = 90, max = 270) / 22.5) * 22.5
   
   random_roof <- roofs[random_roof_index, ]
-  random_demand <- energy_demand_profiles[, random_demand_index] # [kW]
+  random_energy_demand <- energy_demand_profiles[, random_energy_demand_index] # [kWh]
   random_roof_radiation <- solar_radiations[[as.character(random_azimuth)]][[as.character(random_roof$AngleRounded)]] # [kW / m^2]
   
   # Stop if the pv module area would be greater than what would fit on the roof.
@@ -84,17 +88,18 @@ for(i in 1:200){
   
   for (pv_array_size in 1:pv_array_size_max) {
     pv_array_spec <- list(
-      capacity = pv_module_spec$capacity * pv_array_size, # kWp
-      area = pv_module_spec$area * pv_array_size, # m^2
+      capacity = pv_module_spec$capacity * pv_array_size, # [kWp]
+      area = pv_module_spec$area * pv_array_size, # [m^2]
       size = pv_array_size,
-      efficiency = pv_module_spec$efficiency # %
+      efficiency = pv_module_spec$efficiency # [%]
     )
     
-    random_pv_array_output <- pv_array_spec$area * pv_array_spec$efficiency * random_roof_radiation # kW
+    random_pv_array_power_output <- pv_array_spec$area * pv_array_spec$efficiency * random_roof_radiation # [kW]
+    random_pv_array_energy_output <- random_pv_array_power_output * sample_period # [kWh]
     
     energy_balance <- calculate_lifetime_energy_balance(
-      random_demand,
-      random_pv_array_output,
+      random_energy_demand,
+      random_pv_array_energy_output,
       inverter_spec,
       powerwall_spec,
       pv_module_spec,
@@ -110,7 +115,7 @@ for(i in 1:200){
     results_partial <- data.frame(
       index = i,
       band = random_band,
-      demand_index = random_demand_index,
+      demand_index = random_energy_demand_index,
       roof_index = random_roof_index,
       azimuth = random_azimuth,
       pv_array_size = pv_array_size,

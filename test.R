@@ -3,7 +3,7 @@ context("calculate_yearly_energy_balance")
 test_that("System with no PV system imports all the energy", {
   balance <- calculate_yearly_energy_balance(
     energy_demand_profile = energy_demand_profiles[, 1],
-    pv_array_output = rep(0, nrow(energy_demand_profiles)),
+    pv_array_energy_output = rep(0, nrow(energy_demand_profiles)),
     inverter_spec = list(
       efficiency = 0),
     battery_spec = list(
@@ -11,7 +11,7 @@ test_that("System with no PV system imports all the energy", {
       power_nominal = 0,
       efficiency = 0))
   
-  expect_equal(sum(balance$pv_array_output), 0)
+  expect_equal(sum(balance$pv_array_energy_output), 0)
   expect_equal(sum(balance$inverter_loss), 0)
   expect_equal(sum(balance$battery_roundtrip_loss), 0)
   expect_equal(sum(balance$battery_energy), 0)
@@ -22,12 +22,12 @@ test_that("System with no PV system imports all the energy", {
 test_that("Energy balance is preserved", {
   balance <- calculate_yearly_energy_balance(
     energy_demand_profile = energy_demand_profiles[, 1],
-    pv_array_output = 1.83 * solar_radiations[["157.5"]][["30"]],
+    pv_array_energy_output =  0.5 * 1.83 * solar_radiations[["157.5"]][["30"]],
     inverter_spec = pv_inverters[pv_inverters$model == "SE3000 (208V) w/ -ER-US or A-US", ],
     battery_spec = powerwall_spec)
   
   max_discrepancy <- max(with(balance,
-    + pv_array_output
+    + pv_array_energy_output
     - energy_demand_profile
     - inverter_loss
     - battery_roundtrip_loss
@@ -44,7 +44,7 @@ test_that("Lifetime balance rowsfor each year and energy_imported is increasing"
   lifetime_length <- 2
   balance <- calculate_lifetime_energy_balance(
     energy_demand_profile = energy_demand_profiles[, 1],
-    pv_array_output = 1.83 * solar_radiations[["157.5"]][["30"]],
+    pv_array_energy_output = 0.5 * 1.83 * solar_radiations[["157.5"]][["30"]],
     inverter_spec = pv_inverters[pv_inverters$model == "SE3000 (208V) w/ -ER-US or A-US", ],
     battery_spec = powerwall_spec,
     pv_module_spec = pv_module_spec,
