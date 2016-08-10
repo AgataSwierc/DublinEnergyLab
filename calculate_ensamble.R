@@ -38,12 +38,16 @@ load("Cache/energy_demand_profiles.RData")
 
 #' Define bands for demand profiles
 energy_demand_profiles_sums <- sapply(energy_demand_profiles, sum)
-energy_demand_profiles_bands_levels <- as.numeric(cut(energy_demand_profiles_sums,
-  quantile(energy_demand_profiles_sums, c(0, 0.05, 0.35, 0.65 ,0.95, 1))))
+energy_demand_profiles_bands_levels <- as.numeric(cut(energy_demand_profiles_sums, 
+  c(0, 1000, 2500, 5000, 15000, 10e6)))
 energy_demand_profiles_bands <- list()
-energy_demand_profiles_bands[[1]] <- which(energy_demand_profiles_bands_levels == 2)
-energy_demand_profiles_bands[[2]] <- which(energy_demand_profiles_bands_levels == 3)
-energy_demand_profiles_bands[[3]] <- which(energy_demand_profiles_bands_levels == 4)
+energy_demand_profiles_bands[[1]] <- which(energy_demand_profiles_bands_levels == 1)
+energy_demand_profiles_bands[[2]] <- which(energy_demand_profiles_bands_levels == 2)
+energy_demand_profiles_bands[[3]] <- which(energy_demand_profiles_bands_levels == 3)
+energy_demand_profiles_bands[[4]] <- which(energy_demand_profiles_bands_levels == 4)
+energy_demand_profiles_bands[[5]] <- which(energy_demand_profiles_bands_levels == 5)
+
+
 
 
 #' Load roofs.
@@ -57,12 +61,15 @@ roofs$AngleRounded <- round(roofs$Angle / 5) * 5
 
 
 #' Define bands for roofs.
-roofs$AreaBand <- as.numeric(cut(roofs$Area, c(0, quantile(roofs$Area, c(0.33, 0.66, 1)))))
+roofs$AreaBand <- as.numeric(cut(roofs$Area, 
+  c(0, quantile(roofs$Area, c(0.02303071, 0.19793057, 0.62082777, 0.95894526, 1.00000000)))))
 
 roofs_bands <- list()
 roofs_bands[[1]] <- which(roofs$AreaBand == 1)
 roofs_bands[[2]] <- which(roofs$AreaBand == 2)
 roofs_bands[[3]] <- which(roofs$AreaBand == 3)
+roofs_bands[[3]] <- which(roofs$AreaBand == 4)
+roofs_bands[[3]] <- which(roofs$AreaBand == 5)
 
 
 #' Load solar radiation.
@@ -71,9 +78,9 @@ load("Data/solar_radiations.RData")
 sample_period <- 0.5 # [h]
 
 results <- data.frame()
-for(i in 1:200){
+for (i in 1:200) {
   # Pick demand, roof, azimuth and output at random
-  random_band <- ceiling(runif(1, max = 3))
+  random_band <- ceiling(runif(1, max = 5))
   random_energy_demand_index <- energy_demand_profiles_bands[[random_band]][ceiling(runif(1, max = length(energy_demand_profiles_bands[[random_band]])))]
   random_roof_index <- roofs_bands[[random_band]][ceiling(runif(1, max = length(roofs_bands[[random_band]])))]
   random_azimuth <- round(runif(1, min = 90, max = 270) / 22.5) * 22.5

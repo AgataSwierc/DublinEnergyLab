@@ -61,6 +61,37 @@ ggplot(roofs, aes(x = Area)) + geom_density()
 
 
 
+#' How to select optimal bands 
+# -----------------------------------------------------------------------------
+df <- data.frame(x = energy_demand_profiles_sums)
+df$l <- as.factor(cut(energy_demand_profiles_sums,
+  quantile(energy_demand_profiles_sums, c(0, 0.05, 0.35, 0.65 ,0.95, 1))))
+
+ggplot(df, aes(x = x, fill = l)) + 
+  geom_histogram(binwidth = 200) + 
+  scale_x_continuous(limits = c(0, 50000))
+
+bands_count <- 5
+df <- data.frame(x = energy_demand_profiles_sums)
+df$l <- as.factor(cut(energy_demand_profiles_sums,
+  quantile(energy_demand_profiles_sums, c(0, (0.92/bands_count * 0:bands_count) + 0.025, 1))))
+
+
+ggplot(df, aes(x = x, fill = l)) + 
+  geom_histogram(binwidth = 200) + 
+  scale_x_continuous(limits = c(0, 50000))
+
+
+df <- data.frame(x = energy_demand_profiles_sums)
+df$l <- as.factor(cut(energy_demand_profiles_sums,
+  c(0, 1000, 2500, 5000, 15000, 10e6)))
+
+ggplot(df, aes(x = x, fill = l)) + 
+  geom_histogram(binwidth = 200) + 
+  scale_x_continuous(limits = c(0, 50000))
+
+summary(df$l) / sum(summary(df$l)) * 100
+# -----------------------------------------------------------------------------
 
 
 
