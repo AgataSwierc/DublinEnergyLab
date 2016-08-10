@@ -70,8 +70,8 @@ load("Data/solar_radiations.RData")
 
 sample_period <- 0.5 # [h]
 
-results <- data.frame()
-for(i in 1:200){
+run <- function(i) {
+  
   # Pick demand, roof, azimuth and output at random
   random_band <- ceiling(runif(1, max = 3))
   random_energy_demand_index <- energy_demand_profiles_bands[[random_band]][ceiling(runif(1, max = length(energy_demand_profiles_bands[[random_band]])))]
@@ -86,6 +86,9 @@ for(i in 1:200){
   pv_array_size_max <- floor((0.8 * random_roof$Area) / pv_module_spec$area)
   progress <- progress_estimated(pv_array_size_max)
   
+  
+  
+  results <- data.frame()
   for (pv_array_size in 1:pv_array_size_max) {
     pv_array_spec <- list(
       capacity = pv_module_spec$capacity * pv_array_size, # [kWp]
@@ -133,4 +136,31 @@ for(i in 1:200){
   }
   progress$stop()
   progress$print()
+  
+  write.csv(results, sprintf("Results/%05d.csv", i), row.names = FALSE)
+  
+  return (results)
 }
+
+results <- data.frame()
+for(i in 1:2){
+    results <- rbind(results, run(i))
+}
+
+
+
+library(foreach)
+library(doParallel)
+cl <- makeCluster(6)
+registerDoParallel(cl)
+#stopImplicitCluster()
+#stopCluster(cl)
+
+
+results_parallel <- foreach(
+  i = 1:200,
+  .export = c("calculate_economical_indicators"), 
+  .packages = c("dplyr"),
+  .combine = rbind) %dopar% 
+  run(i)
+
