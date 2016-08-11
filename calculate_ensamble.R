@@ -1,6 +1,8 @@
 #' ## Initialize script
 source("App/Common.R")
 
+library(foreach)
+library(doParallel)
 
 #' Initialize common parameters
 lifetime_length <- 25
@@ -68,8 +70,8 @@ roofs_bands <- list()
 roofs_bands[[1]] <- which(roofs$AreaBand == 1)
 roofs_bands[[2]] <- which(roofs$AreaBand == 2)
 roofs_bands[[3]] <- which(roofs$AreaBand == 3)
-roofs_bands[[3]] <- which(roofs$AreaBand == 4)
-roofs_bands[[3]] <- which(roofs$AreaBand == 5)
+roofs_bands[[4]] <- which(roofs$AreaBand == 4)
+roofs_bands[[5]] <- which(roofs$AreaBand == 5)
 
 
 #' Load solar radiation.
@@ -149,20 +151,9 @@ run <- function(i) {
   return (results)
 }
 
-results <- data.frame()
-for(i in 1:2){
-    results <- rbind(results, run(i))
-}
 
-
-
-library(foreach)
-library(doParallel)
-cl <- makeCluster(6)
+cl <- makeCluster(10)
 registerDoParallel(cl)
-#stopImplicitCluster()
-#stopCluster(cl)
-
 
 results_parallel <- foreach(
   i = 1:200,
@@ -171,3 +162,4 @@ results_parallel <- foreach(
   .combine = rbind) %dopar% 
   run(i)
 
+stopCluster(cl)
