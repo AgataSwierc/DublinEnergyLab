@@ -1,4 +1,7 @@
 #' Load required libraries.
+library("checkpoint")
+checkpoint("2016-05-01")
+
 library(xts)
 library(dplyr)
 library(dygraphs)
