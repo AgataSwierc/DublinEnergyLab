@@ -10,6 +10,11 @@ library(RColorBrewer)
 library("testthat")
 library("ggplot2")
 library("reshape2")
+library(grid)
+library(scales)
+library("gridExtra")
+
+theme_set(theme_bw())
 
 #' Define parameters of the powerwall battery.
 powerwall_spec = list(
