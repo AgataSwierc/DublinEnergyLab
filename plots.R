@@ -4,6 +4,26 @@ ggplot(results, aes(x = pv_array_size, y=npv, col=as.factor(demand_index))) + ge
 results$band <- factor(results$band, levels = 1:5, labels = c("DA", "DB", "DC", "DD", "DE"))
 
 
+results_mean <- results %>%
+  group_by(pv_array_size, band) %>%
+  summarize(
+    index = 0,
+    npv_05 = quantile(npv, 0.05),
+    npv_50 = quantile(npv, 0.50),
+    npv_95 = quantile(npv, 0.95),
+    npv_mean = mean(npv),
+    solar_energy_demand_ratio_05 = quantile(solar_energy_demand_ratio, 0.05),
+    solar_energy_demand_ratio_50 = quantile(solar_energy_demand_ratio, 0.50),
+    solar_energy_demand_ratio_95 = quantile(solar_energy_demand_ratio, 0.95),
+    solar_energy_demand_ratio_mean = mean(solar_energy_demand_ratio),
+    count = n()) %>%
+  inner_join(by="band",
+    data.frame(
+      band = factor(c("DA", "DB", "DC", "DD", "DE")),
+      pv_array_size_display_limit = c(6, 17, 30, 50, 65))) %>%
+  filter(pv_array_size <= pv_array_size_display_limit)
+
+
 # NPV curves for a small sample
 ggplot(results, aes(x = pv_array_size, y=npv, group=as.factor(index), col = band)) + 
   geom_line(size = 0.5, alpha = 0.2) + 
@@ -20,7 +40,9 @@ ggplot(results, aes(x = pv_array_size, y=npv, group=as.factor(index))) +
   theme(legend.position='none') +
   geom_line(data = results_mean, aes(x = pv_array_size, y=npv_50), size=1, col="red") +
   geom_line(data = results_mean, aes(x = pv_array_size, y=npv_05), size=1, col="blue") +
-  geom_line(data = results_mean, aes(x = pv_array_size, y=npv_95), size=1, col="blue")
+  geom_line(data = results_mean, aes(x = pv_array_size, y=npv_95), size=1, col="blue") +
+  scale_y_continuous(labels = scales::comma) +
+  labs(x = "Number of PV Modules (each 245Wp)", y = "Net Present Value (€)")
 
 
 # Sir for the band 1
@@ -46,8 +68,9 @@ ggplot(results, aes(x = pv_array_size, y=solar_energy_demand_ratio, group=as.fac
   theme(legend.position='none') +
   geom_line(data = results_mean, aes(x = pv_array_size, y=solar_energy_demand_ratio_50), size=1, col="red") +
   geom_line(data = results_mean, aes(x = pv_array_size, y=solar_energy_demand_ratio_05), size=1, col="blue") +
-  geom_line(data = results_mean, aes(x = pv_array_size, y=solar_energy_demand_ratio_95), size=1, col="blue")
-
+  geom_line(data = results_mean, aes(x = pv_array_size, y=solar_energy_demand_ratio_95), size=1, col="blue") +
+  scale_y_continuous(limits = c(0, 1), breaks = seq(0, 1, 0.2), labels = scales::percent) +
+  labs(x = "Number of PV Modules (each 245Wp)", y = "PV Output:Electricity Demand Ratio")
 
 
 # Distribution of the optimal NPV
@@ -59,15 +82,17 @@ df <- results %>%
   inner_join(results, by="index") %>%
   mutate(
     weight = (npv - npv_min) / (npv_max - npv_min))
+
 ggplot(df, aes(x = pv_array_size, weight=weight, fill=factor(1))) + 
-  geom_density(alpha=0.5) +
+  geom_histogram(fill = "grey50", color = "black") +
   scale_fill_grey() +
   theme_bw() + 
   facet_grid(band ~ ., scales = "free_y") +
-
-
   scale_x_continuous(breaks = seq(0,100,5)) +
-  theme(legend.position='none')
+  theme(legend.position='none') +
+  labs(x = "Number of PV Modules (each 245Wp)", y = "Frequency") +
+  scale_y_continuous(labels = scales::comma)
+  
 # Optimal pv_array_size: 3, 6, 12, 20, 61
 df_summary <- df %>%
   group_by(band, pv_array_size) %>%
