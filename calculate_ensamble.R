@@ -50,6 +50,12 @@ energy_demand_profiles_bands[[4]] <- which(energy_demand_profiles_bands_levels =
 energy_demand_profiles_bands[[5]] <- which(energy_demand_profiles_bands_levels == 5)
 
 
+energy_demand_profiles_bands_map <- rep(0, length(energy_demand_profiles_sums))
+energy_demand_profiles_bands_map[energy_demand_profiles_bands[[1]]] <- 1
+energy_demand_profiles_bands_map[energy_demand_profiles_bands[[2]]] <- 2
+energy_demand_profiles_bands_map[energy_demand_profiles_bands[[3]]] <- 3
+energy_demand_profiles_bands_map[energy_demand_profiles_bands[[4]]] <- 4
+energy_demand_profiles_bands_map[energy_demand_profiles_bands[[5]]] <- 5
 
 
 #' Load roofs.
@@ -82,8 +88,12 @@ sample_period <- 0.5 # [h]
 run <- function(i) {
   
   # Pick demand, roof, azimuth and output at random
-  random_band <- ceiling(runif(1, max = 5))
-  random_energy_demand_index <- energy_demand_profiles_bands[[random_band]][ceiling(runif(1, max = length(energy_demand_profiles_bands[[random_band]])))]
+  # random_band <- ceiling(runif(1, max = 5))
+  # random_energy_demand_index <- energy_demand_profiles_bands[[random_band]][ceiling(runif(1, max = length(energy_demand_profiles_bands[[random_band]])))]
+  
+  # Pick demand profile sequentially and select roof and azimuth at random
+  random_energy_demand_index <- i
+  random_band <- energy_demand_profiles_bands_map[i]
   random_roof_index <- roofs_bands[[random_band]][ceiling(runif(1, max = length(roofs_bands[[random_band]])))]
   random_azimuth <- round(runif(1, min = 90, max = 270) / 22.5) * 22.5
   
@@ -156,7 +166,7 @@ cl <- makeCluster(10)
 registerDoParallel(cl)
 
 results_parallel <- foreach(
-  i = 1:200,
+  i = 2811:2996,
   .export = c("calculate_economical_indicators"), 
   .packages = c("dplyr"),
   .combine = rbind) %dopar% 
