@@ -74,6 +74,7 @@ ggplot(results, aes(x = pv_array_size, y=solar_energy_demand_ratio, group=as.fac
 
 
 # Distribution of the optimal NPV
+# weighted
 df <- results %>%
   group_by(index) %>%
   summarize(
@@ -81,7 +82,17 @@ df <- results %>%
     npv_min = min(npv)) %>%
   inner_join(results, by="index") %>%
   mutate(
-    weight = (npv - npv_min) / (npv_max - npv_min))
+    weight = (npv - npv_min) / (npv_max - npv_min) / n())
+
+# not-weighted
+df <- results %>%
+  group_by(index) %>%
+  summarize(
+    band = first(band),
+    pv_array_size = which.max(npv)) %>%
+  mutate(
+    weight = 1)
+  
 
 ggplot(df, aes(x = pv_array_size, weight=weight, fill=factor(1))) + 
   geom_histogram(fill = "grey50", color = "black") +
@@ -146,7 +157,7 @@ ggplot(roofs, aes(x = Area, y = Angle)) + geom_point() +
 #' Demand profiles histogram
 df <- data.frame(x = energy_demand_profiles_sums)
 ggplot(df, aes(x = x)) + 
-  geom_histogram(binwidth = 500) + 
+  geom_histogram(binwidth = 500, color="black", fill="grey50") + 
   coord_cartesian(xlim=c(0, 30000)) +
   scale_x_continuous(labels = scales::comma) +
   labs(x = "Total Annual Electricity Consumption (kWh)", y = "Frequency") +
