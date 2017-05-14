@@ -93,6 +93,19 @@ df <- results %>%
   mutate(
     weight = 1)
   
+df <- results %>%
+  group_by(band, pv_array_size) %>%
+  summarize(
+    npv_mean = mean(npv),
+    npv_sd = sd(npv),
+    a = n())
+ggplot(df, aes(x = pv_array_size, npv_mean)) +
+  geom_point(size = 3, col="black") + 
+  geom_line(col="black") +
+  geom_errorbar(aes(ymin = npv_mean - npv_sd, ymax = npv_mean + npv_sd), width=0.25)+
+  facet_grid(band ~ ., scales = "free_y") +
+  scale_x_continuous(breaks = seq(0,100,5))
+
 
 ggplot(df, aes(x = pv_array_size, weight=weight, fill=factor(1))) + 
   geom_histogram(fill = "grey50", color = "black") +
