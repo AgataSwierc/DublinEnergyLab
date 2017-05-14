@@ -99,12 +99,51 @@ df <- results %>%
     npv_mean = mean(npv),
     npv_sd = sd(npv),
     a = n())
+
+
 ggplot(df, aes(x = pv_array_size, npv_mean)) +
   geom_point(size = 3, col="black") + 
   geom_line(col="black") +
   geom_errorbar(aes(ymin = npv_mean - npv_sd, ymax = npv_mean + npv_sd), width=0.25)+
   facet_grid(band ~ ., scales = "free_y") +
   scale_x_continuous(breaks = seq(0,100,5))
+
+#-------------------------------------------
+# NPV boxplots
+df <- results %>%
+  group_by(index) %>%
+  summarize(
+    band = first(band),
+    pv_array_size = which.max(npv),
+    npv_max = max(npv)) %>%
+  mutate(
+    pv_array_size_bin = cut(
+      pv_array_size, 
+      breaks = c(0:20, seq(25, 100, 5)),
+      labels = c(as.character(1:20), paste0("(", seq(20, 95, 5), ",", seq(25, 100, 5), "]"))),
+    scale = factor(ifelse(pv_array_size <= 20, "linear", "bins"), levels = c("linear", "bins"))
+  )
+ggplot(df, aes(x = pv_array_size_bin, y = npv_max)) +
+  geom_boxplot() +
+  facet_grid(band ~ scale, scales = "free") +
+  theme_bw() +
+  theme(strip.text.x = element_blank()) +
+  labs(x = "Number of PV Modules (each 245Wp)", y = "Net Present Value (€)")
+
+df <- results %>%
+  group_by(index) %>%
+  summarize(
+    band = first(band),
+    pv_array_size = which.max(npv),
+    npv_max = max(npv))
+ggplot(df, aes(x = factor(pv_array_size), y = npv_max)) +
+  geom_boxplot() +
+  facet_grid(band ~ ., scales = "free_y") +
+  theme_bw() +
+  labs(x = "Number of PV Modules (each 245Wp)", y = "Net Present Value (€)")
+
+
+
 
 
 ggplot(df, aes(x = pv_array_size, weight=weight, fill=factor(1))) + 
