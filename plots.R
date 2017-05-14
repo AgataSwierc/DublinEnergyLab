@@ -209,7 +209,7 @@ p1 <-
   scale_x_custom +
   theme_custom +
   theme(legend.position = c(.9, .85), legend.title = element_blank()) +
-  labs(y = "(kW)")
+  labs(y = "Electricity Demand\nand PV Output (kW)")
 
 
 p2 <- 
@@ -220,7 +220,7 @@ p2 <-
   scale_y_continuous(labels = scales::percent) +
   scale_x_custom +
   theme_custom +
-  labs(y = "Battery Charge (%)")
+  labs(y = "Battery Charge\n(%)")
 
 
 p3 <- 
@@ -229,7 +229,7 @@ p3 <-
   geom_line() +
   scale_x_custom +
   theme_custom +
-  labs(y = " Electricity Imported [+] and Exported [-] (kW)")
+  labs(y = " Electricity Imported [+]\nand Exported [-] (kW)")
 
 grid.newpage()
 grid.draw(rbind(ggplotGrob(p1 + theme_no_x), ggplotGrob(p2 + theme_no_x), ggplotGrob(p3), size = "last"))
@@ -248,6 +248,7 @@ calculate_yearly_energy_balance(
 # -----------------------
 # Building example
 #save(results, file="example_building_results.RData")
+load("example_building_results.RData")
 p1 <-
   ggplot(results, aes(x = pv_array_size, y=npv, group=as.factor(index), col=as.factor(band))) + 
   geom_point(size = 3, col="black") + 
@@ -265,7 +266,7 @@ p2 <-
   theme_bw() +
   scale_y_continuous(limits = c(0, 1), breaks = seq(0, 1, 0.2), labels = scales::percent) +
   scale_x_continuous(limits = c(0, 20), breaks = seq(0, 20, 2)) +
-  labs(x = "Number of PV Modules (each 245Wp)", y = "PV Output:Electricity Demand Ratio") +
+  labs(x = "Number of PV Modules (each 245Wp)", y = "Utilization Ratio") +
   theme(axis.title.y=element_text(margin=margin(0,20,0,0)))
 
 grid.newpage()
